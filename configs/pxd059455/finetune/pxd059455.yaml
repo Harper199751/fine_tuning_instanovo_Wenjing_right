@@ -1,0 +1,14 @@
+unfreeze_format: start_epoch
+verbose: True
+unfreeze_schedule:
+  - start_epoch: 0
+    params:
+      - head.bias
+      - head.weight
+      - aa_embed.weight
+  - start_epoch: 1
+    params:
+      - decoder.*
+  - start_epoch: 2
+    params:
+      - "*"

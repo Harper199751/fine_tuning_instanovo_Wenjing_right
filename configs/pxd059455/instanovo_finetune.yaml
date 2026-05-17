@@ -1,0 +1,65 @@
+defaults:
+  - _self_
+  - model: instanovo_base
+  - dataset: pxd059455
+  - residues: default
+  - finetune: pxd059455
+
+run_name: pxd059455_instanovo
+tags:
+  - pxd059455
+  - wastewater
+  - finetune
+
+tb_summarywriter: "${oc.env:INSTANOVO_WORKDIR,/tmp/instanovo_pxd059455}/tensorboard/"
+
+seed: 101
+warmup_iters: 5
+learning_rate: 5e-6
+weight_decay: 1e-6
+train_batch_size: 16
+grad_accumulation: 4
+gradient_clip_val: 10.0
+predict_batch_size: 64
+lr_scheduler: cosine
+
+num_workers: 8
+pin_memory: True
+prefetch_factor: 2
+use_shuffle_buffer: True
+shuffle_buffer_size: 10000
+
+compile_model: False
+force_cpu: False
+fp16: True
+mps: False
+force_fp32: False
+
+training_steps: 100
+num_sanity_val_steps: 2
+validate_before_training: True
+console_logging_steps: 50
+tensorboard_logging_steps: 25
+use_neptune: False
+
+enable_verbose_logging: True
+enable_verbose_accelerate: True
+enable_verbose_s3: True
+
+train_subset: 1.0
+valid_subset: 1.0
+
+validation_interval: 10
+checkpoint_interval: 10
+
+save_model: True
+keep_model_every_interval: False
+save_accelerator_state: True
+keep_accelerator_every_interval: False
+model_save_folder_path: "${oc.env:INSTANOVO_WORKDIR,/tmp/instanovo_pxd059455}/models/pxd059455_instanovo"
+checkpoint_metric: valid_loss
+checkpoint_metric_mode: min
+
+resume_accelerator_state:
+resume_checkpoint_path: "${oc.env:INSTANOVO_WORKDIR,/tmp/instanovo_pxd059455}/checkpoints/instanovo-v1.2.0-train-resume.ckpt"
+residue_conflict_resolution: delete

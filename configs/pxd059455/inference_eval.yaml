@@ -1,0 +1,82 @@
+data_path:
+instanovo_model: instanovo-v1.2.0
+output_path:
+knapsack_path:
+data_type:
+
+denovo: False
+num_beams: 1
+max_length: 40
+max_charge: 10
+isotope_error_range: [0, 1]
+subset: 1.0
+use_knapsack: False
+save_all_predictions: True
+
+save_encoder_outputs: False
+encoder_output_path:
+encoder_output_reduction: mean
+
+refine: False
+refinement_path:
+prediction_refine_col: predictions_tokenised
+prediction_confidence_col: log_probs
+refinement_id_col: spectrum_id
+dataset_id_col: spectrum_id
+refine_all: False
+refine_threshold: 0.9
+
+prediction_tokenised_col: predictions_tokenised
+prediction_col: predictions
+log_probs_col: log_probs
+token_log_probs_col: token_log_probs
+
+suppressed_residues:
+  - "S[UNIMOD:21]"
+  - "T[UNIMOD:21]"
+  - "Y[UNIMOD:21]"
+disable_terminal_residues_anywhere: True
+
+num_workers: 8
+batch_size: 64
+pin_memory: True
+prefetch_factor: 2
+force_cpu: False
+fp16: True
+mps: False
+force_fp32: False
+
+log_interval: 25
+use_basic_logging: True
+
+filter_precursor_ppm: 20
+filter_confidence: 1e-4
+filter_fdr_threshold: 0.05
+
+residue_remapping:
+  "M(ox)": "M[UNIMOD:35]"
+  "M(+15.99)": "M[UNIMOD:35]"
+  "Q(+0.98)": "Q[UNIMOD:7]"
+  "N(+0.98)": "N[UNIMOD:7]"
+  "Q(+.98)": "Q[UNIMOD:7]"
+  "N(+.98)": "N[UNIMOD:7]"
+  "C(+57.02)": "C[UNIMOD:4]"
+  "(+42.01)": "[UNIMOD:1]"
+  "(+43.01)": "[UNIMOD:5]"
+  "(-17.03)": "[UNIMOD:385]"
+
+column_map:
+  "Modified sequence": "modified_sequence"
+  "m/z": "precursor_mz"
+  "Mass": "precursor_mass"
+  "Charge": "precursor_charge"
+  "Scan number": "scan_number"
+
+index_columns:
+  - experiment_name
+  - scan_number
+  - spectrum_id
+  - raw_file
+  - precursor_mz
+  - precursor_charge
+

@@ -1,0 +1,27 @@
+kind: AIchorManifest
+apiVersion: 0.2.3
+name: pxd059455-instanovo-finetune
+builder:
+  image: image
+  dockerfile: ./Dockerfile
+  context: .
+spec:
+  operator: pytorch
+  image: image
+  command: /app/scripts/aichor_run_pxd059455.sh
+  timeout: 36h
+  types:
+    worker:
+      count: 1
+      resources:
+        cpus: 16
+        memory: 160
+        shmSizeGB: 16
+        accelerators:
+          gpu:
+            product: NVIDIA-A100-SXM4-80GB
+            type: gpu
+            count: 1
+  tensorboard:
+    enabled: true
+
