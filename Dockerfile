@@ -30,7 +30,6 @@ RUN python -m pip install --upgrade pip setuptools wheel && \
 
 COPY . /app
 
-RUN chmod +x /app/scripts/aichor_run_pxd059455.sh
+RUN chmod +x /app/scripts/run_pxd059455_aichor.sh
 
-ENTRYPOINT ["/app/scripts/aichor_run_pxd059455.sh"]
-
+ENTRYPOINT ["/app/scripts/run_pxd059455_aichor.sh"]

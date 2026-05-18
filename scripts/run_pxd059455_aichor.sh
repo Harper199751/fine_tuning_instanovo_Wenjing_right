@@ -39,7 +39,7 @@ then
 fi
 
 echo "=== Preparing pretrained checkpoint ==="
-python scripts/09_prepare_instanovo_checkpoint.py \
+python scripts/01_prepare_instanovo_checkpoint.py \
   --model-id instanovo-v1.2.0 \
   --output "${CHECKPOINT_DIR}/instanovo-v1.2.0-train-resume.ckpt"
 
@@ -51,7 +51,7 @@ fi
 if [[ -n "${PXD059455_SAMPLE_REGEX:-}" ]]; then
   DOWNLOAD_ARGS+=(--sample-regex "${PXD059455_SAMPLE_REGEX}")
 fi
-python scripts/10_download_pxd059455.py "${DOWNLOAD_ARGS[@]}"
+python scripts/02_download_pxd059455.py "${DOWNLOAD_ARGS[@]}"
 
 echo "=== Building InstaNovo SpectrumDataFrame splits ==="
 BUILD_ARGS=(
@@ -65,10 +65,10 @@ BUILD_ARGS=(
 if [[ -n "${PXD059455_BUILD_MAX_FILES:-}" ]]; then
   BUILD_ARGS+=(--max-files "${PXD059455_BUILD_MAX_FILES}")
 fi
-python scripts/11_build_pxd059455_sdf.py "${BUILD_ARGS[@]}"
+python scripts/03_build_pxd059455_sdf.py "${BUILD_ARGS[@]}"
 
 echo "=== Computing training-step overrides ==="
-python scripts/12_make_training_overrides.py \
+python scripts/04_make_training_overrides.py \
   --metadata "${PROCESSED_DIR}/dataset_metadata.json" \
   --effective-batch-size 64 \
   --epochs 6 \
@@ -137,7 +137,7 @@ instanovo transformer predict \
   instanovo_model="${MODEL_DIR}/model_best.ckpt"
 
 echo "=== Evaluating ==="
-python scripts/13_evaluate_pxd059455.py \
+python scripts/05_evaluate_pxd059455.py \
   --official "${PRED_DIR}/official_instanovo_v1.2.0_test.csv" \
   --finetuned "${PRED_DIR}/pxd059455_finetuned_test.csv" \
   --summary-out "${REPORT_DIR}/summary_official_vs_finetuned.csv" \
@@ -145,7 +145,7 @@ python scripts/13_evaluate_pxd059455.py \
   --json-out "${REPORT_DIR}/run_report.json"
 
 echo "=== Uploading artifacts if Aichor output storage is available ==="
-python scripts/14_upload_aichor_artifacts.py \
+python scripts/06_upload_aichor_artifacts.py \
   "${PROCESSED_DIR}/dataset_metadata.json" \
   "${SDF_DIR}" \
   "${MODEL_DIR}" \

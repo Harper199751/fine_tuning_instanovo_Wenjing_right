@@ -72,19 +72,23 @@ partial downloads before retrying without `Range`, and falls back from
 
 ## What Runs In The Container
 
-1. `scripts/09_prepare_instanovo_checkpoint.py` downloads `instanovo-v1.2.0`
+1. `scripts/01_prepare_instanovo_checkpoint.py` downloads `instanovo-v1.2.0`
    and writes a trainer-compatible resume checkpoint.
-2. `scripts/10_download_pxd059455.py` downloads PXD059455 metadata and the
+2. `scripts/02_download_pxd059455.py` downloads PXD059455 metadata and the
    mzXML files whose raw-file names appear in `docs/msms.xlsx`. Vendor `.raw`
    files are skipped by default.
-3. `scripts/11_build_pxd059455_sdf.py` maps local `docs/msms.xlsx` labels to
+3. `scripts/03_build_pxd059455_sdf.py` maps local `docs/msms.xlsx` labels to
    PRIDE mzXML scans, encodes PTMs as UNIMOD tokens, filters bad precursor
    mass matches, and saves train/valid/test SpectrumDataFrame shards.
-4. `instanovo transformer train` fine-tunes with `configs/pxd059455`.
-5. `instanovo transformer predict --evaluation` evaluates the official and
+4. `scripts/04_make_training_overrides.py` computes training steps and the
+   step-based unfreezing schedule from the prepared train split.
+5. `instanovo transformer train` fine-tunes with `configs/pxd059455`.
+6. `instanovo transformer predict --evaluation` evaluates the official and
    fine-tuned checkpoints on the held-out test split.
-6. `scripts/13_evaluate_pxd059455.py` writes summary metrics and a comparison
+7. `scripts/05_evaluate_pxd059455.py` writes summary metrics and a comparison
    table.
+8. `scripts/06_upload_aichor_artifacts.py` uploads the selected local outputs
+   when AIchor output storage is available.
 
 ## Defaults
 
