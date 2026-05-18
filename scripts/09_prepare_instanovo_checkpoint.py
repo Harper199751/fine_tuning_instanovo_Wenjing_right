@@ -5,9 +5,10 @@ from __future__ import annotations
 
 import argparse
 from pathlib import Path
+from typing import Any
 
 import torch
-from omegaconf import OmegaConf
+from omegaconf import DictConfig, ListConfig, OmegaConf
 
 from instanovo.transformer.model import InstaNovo
 
@@ -17,6 +18,14 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--model-id", default="instanovo-v1.2.0")
     parser.add_argument("--output", required=True)
     return parser.parse_args()
+
+
+def to_plain_config(config: Any) -> dict[str, Any]:
+    if isinstance(config, (DictConfig, ListConfig)):
+        return OmegaConf.to_container(config, resolve=True)
+    if isinstance(config, dict):
+        return config
+    raise TypeError(f"Unsupported InstaNovo config type: {type(config)!r}")
 
 
 def main() -> None:
@@ -29,7 +38,7 @@ def main() -> None:
         return
 
     model, model_config = InstaNovo.from_pretrained(args.model_id)
-    config = OmegaConf.to_container(model_config, resolve=True)
+    config = to_plain_config(model_config)
 
     # The 1.2.x trainer expects nested residues when loading a fine-tune resume
     # checkpoint; prediction checkpoints produced by training remain flat.
@@ -46,4 +55,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
