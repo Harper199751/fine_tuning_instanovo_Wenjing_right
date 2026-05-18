@@ -66,10 +66,7 @@ scripts/reproduce_release_checkpoint.sh
 
 ## Run The Workflow
 
-The workflow is containerized. The reference run was executed on
-[AIchor](https://aichor.ai/) using an H100 GPU, but the same container should be
-portable to other GPU environments with the same dependencies.
-
-```bash
-aichor submit local experiment --repo-dir . --message "PXD059455 InstaNovo finetune" --project-name "DTU Denovo Sequencing"
-```
+The workflow is containerized and should be portable to GPU environments with
+the same dependencies. See
+[`docs/PXD059455_AICHOR_FINETUNE.md`](docs/PXD059455_AICHOR_FINETUNE.md) for the
+pipeline steps, configuration, and expected outputs.

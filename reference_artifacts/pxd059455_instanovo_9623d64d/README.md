@@ -2,9 +2,6 @@
 
 Reference artifacts from the successful PXD059455 InstaNovo fine-tuning run.
 
-- AIchor project: `2e6da747-d6d3-4f62-a056-b5b13d8db3fc`
-- AIchor experiment: `9623d64d-c085-42de-8c73-e43f47ccbf55`
-- Commit message: `proper PXD059455 InstaNovo finetune trainer-step epochs`
 - Model baseline: `instanovo-v1.2.0`
 
 ## Contents

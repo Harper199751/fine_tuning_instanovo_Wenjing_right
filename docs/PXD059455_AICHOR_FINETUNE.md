@@ -31,20 +31,11 @@ downloads against `checksum.txt`, matches labelled scans back to the downloaded
 peak-list files, and splits data by raw file into train, validation, and test
 partitions.
 
-## Submit
+## Execution Environment
 
-[AIchor](https://aichor.ai/) is used here as the GPU execution platform.
-
-```bash
-aichor submit local experiment --repo-dir . --message "proper PXD059455 InstaNovo finetune trainer-step epochs" --project-name "DTU Denovo Sequencing"
-```
-
-The default AIchor manifest requests one
-`NVIDIA-H100-80GB-HBM3-MIG-3g.40gb` GPU slice with 16 CPU cores and 160 GiB
-memory.
-
-Reference successful experiment:
-`9623d64d-c085-42de-8c73-e43f47ccbf55`.
+The workflow is containerized and should be portable to GPU environments with
+the same dependencies. The reference run used one H100-class GPU with 16 CPU
+cores and 160 GiB memory.
 
 Reference outputs from this run are committed under
 `reference_artifacts/pxd059455_instanovo_9623d64d/`.
@@ -67,7 +58,7 @@ Reference outputs from this run are committed under
 7. `scripts/05_evaluate_pxd059455.py` writes summary metrics and a comparison
    table.
 8. `scripts/06_upload_aichor_artifacts.py` uploads selected local outputs when
-   AIchor output storage is available.
+   compatible output storage is available.
 
 ## Training Defaults
 
@@ -164,4 +155,4 @@ The job writes local artifacts under `${INSTANOVO_WORKDIR:-/tmp/instanovo_pxd059
 - `reports/run_report.json`
 
 When `AICHOR_OUTPUT_PATH` is present, the entrypoint uploads these artifacts to
-the AIchor output bucket at the end of the run.
+the configured output bucket at the end of the run.
