@@ -41,7 +41,7 @@ The default AIchor manifest requests one
 `NVIDIA-H100-80GB-HBM3-MIG-3g.40gb` GPU slice with 16 CPU cores and 160 GiB
 memory.
 
-Current submitted experiment: `9623d64d-c085-42de-8c73-e43f47ccbf55`. Earlier
+Current successful experiment: `9623d64d-c085-42de-8c73-e43f47ccbf55`. Earlier
 experiments were superseded before the final run: `03fea81f-ef4d-42c6-8a97-07fc4bcbb4c5`
 had an excessive step floor, `3dccf233-4075-461c-820d-abfe651cd3cc` still
 requested an unavailable A100, and `f126949b-7d2e-4ce5-876c-2594c910a122`
@@ -74,6 +74,20 @@ because the step calculation used effective batch size instead of InstaNovo's
 trainer batch count; the override generator now computes epoch length from
 `train_batch_size`, so 6 epochs correspond to about 306 trainer steps for the
 current split.
+
+## Result
+
+The corrected 6-epoch run trained for 306 trainer steps on 831 training spectra,
+validated every 51 steps on 57 validation spectra, and evaluated on 78 held-out
+test spectra. Validation loss decreased from `0.45504` before training to
+`0.32188` at the final checkpoint.
+
+Compared with the official InstaNovo v1.2.0 checkpoint on the held-out test
+split, the fine-tuned checkpoint improved amino-acid precision from `0.77529`
+to `0.79437`, amino-acid recall from `0.77605` to `0.79747`, amino-acid error
+rate from `0.14314` to `0.12658`, and peptide precision/recall from `0.58974`
+to `0.62821`. The 20 ppm precursor-mass pass rate increased from `66/78` to
+`67/78`, and no phospho predictions were emitted.
 
 ## What Runs In The Container
 
