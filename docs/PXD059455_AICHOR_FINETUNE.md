@@ -144,19 +144,6 @@ short-run metrics instead: amino-acid precision `0.78641`, amino-acid recall
 experiment `9623d64d-c085-42de-8c73-e43f47ccbf55` before using the release URL
 as the canonical final checkpoint.
 
-## Smoke Test Knobs
-
-These environment variables can be set in the container or manifest for a
-short diagnostic run:
-
-```bash
-PXD059455_DOWNLOAD_LIMIT=2
-PXD059455_BUILD_MAX_FILES=2
-PXD059455_SAMPLE_REGEX='MP_CT17052024'
-```
-
-Do not use these variables for a production fine-tuning run.
-
 ## Outputs
 
 The job writes local artifacts under `${INSTANOVO_WORKDIR:-/tmp/instanovo_pxd059455}`:
