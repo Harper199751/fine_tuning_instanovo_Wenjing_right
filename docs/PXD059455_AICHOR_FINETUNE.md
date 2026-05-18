@@ -28,13 +28,13 @@ PXD059455-specific data preparation and run configuration:
 
 ## Submit
 
-AIchor is used here only as the available GPU execution platform.
+[AIchor](https://aichor.ai/) is used here only as the available GPU execution platform.
 
 ```bash
 aichor submit local experiment --repo-dir . --message "proper PXD059455 InstaNovo finetune local tensorboard" --project-name "DTU Denovo Sequencing"
 ```
 
-The default Aichor manifest requests one
+The default AIchor manifest requests one
 `NVIDIA-H100-80GB-HBM3-MIG-3g.40gb` GPU slice with 16 CPU cores and 160 GiB
 memory.
 
