@@ -103,6 +103,16 @@ split, the fine-tuned checkpoint improved:
 
 No phospho predictions were emitted.
 
+## Dataset Size
+
+This is a small supervised fine-tuning set. The reference split contains `831`
+training spectra, `57` validation spectra, and `78` test spectra, so the result
+should be interpreted as a proof of concept for this PXD059455 fine-tuning
+workflow rather than as a fully powered domain adaptation run. A more
+substantial fine-tuning effort would require many more labelled spectra,
+ideally covering more raw files, organisms, peptide classes, charge states, and
+relevant PTMs.
+
 ## Reproduce From Checkpoint
 
 The fine-tuned checkpoint is too large to commit directly to Git. The public

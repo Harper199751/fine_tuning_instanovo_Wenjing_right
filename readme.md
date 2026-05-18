@@ -34,6 +34,16 @@ split, the fine-tuned checkpoint improved:
 Reference artifacts are committed under
 [`reference_artifacts/pxd059455_instanovo_9623d64d`](reference_artifacts/pxd059455_instanovo_9623d64d).
 
+## Dataset Size
+
+This is a small supervised fine-tuning set: the reference split contains `831`
+training spectra, `57` validation spectra, and `78` test spectra. The run should
+therefore be interpreted as a proof of concept for the PXD059455 workflow and
+data plumbing rather than as a fully powered domain adaptation effort. A more
+substantial fine-tuning effort would require many more labelled spectra,
+ideally covering more raw files, organisms, peptide classes, charge states, and
+relevant PTMs.
+
 ## Checkpoint
 
 The fine-tuned checkpoint is available from the GitHub release:
