@@ -33,13 +33,7 @@ Held-out test split: 78 spectra.
 | 20 ppm pass count | 66/78 | 67/78 |
 
 The trained checkpoint is not committed to Git because it is a large binary
-artifact. It remains available in AIchor output storage at:
-
-```text
-dtu-denovo-s-2e6da747d6d34f62-outputs:output/9623d64d-c085-42de-8c73-e43f47ccbf55/pxd059455_instanovo/model_best.ckpt
-```
-
-The intended public release URL for the checkpoint is:
+artifact. The public checkpoint location is:
 
 ```text
 https://github.com/BioGeek/fine_tuning_instanovo_Wenjing_right/releases/download/pxd059455-finetune/model_best.ckpt

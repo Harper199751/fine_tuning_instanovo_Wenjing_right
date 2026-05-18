@@ -105,8 +105,8 @@ No phospho predictions were emitted.
 
 ## Reproduce From Checkpoint
 
-The fine-tuned checkpoint is too large to commit directly to Git. The intended
-release location is:
+The fine-tuned checkpoint is too large to commit directly to Git. The public
+checkpoint location is:
 
 ```text
 https://github.com/BioGeek/fine_tuning_instanovo_Wenjing_right/releases/download/pxd059455-finetune/model_best.ckpt
