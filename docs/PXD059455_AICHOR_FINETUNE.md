@@ -34,14 +34,14 @@ repository, adapted for this wastewater dataset. The main changes are:
 [AIchor](https://aichor.ai/) is used here only as the available GPU execution platform.
 
 ```bash
-aichor submit local experiment --repo-dir . --message "proper PXD059455 InstaNovo finetune step schedule" --project-name "DTU Denovo Sequencing"
+aichor submit local experiment --repo-dir . --message "proper PXD059455 InstaNovo finetune robust PRIDE downloads" --project-name "DTU Denovo Sequencing"
 ```
 
 The default AIchor manifest requests one
 `NVIDIA-H100-80GB-HBM3-MIG-3g.40gb` GPU slice with 16 CPU cores and 160 GiB
 memory.
 
-Current submitted experiment: `05a8819d-5499-49ec-8a92-e4bc5f4db436`. Earlier
+Current submitted experiment: `4974ae3f-7e1b-466f-8ec6-b22f4988c67e`. Earlier
 experiments were superseded before the final run: `03fea81f-ef4d-42c6-8a97-07fc4bcbb4c5`
 had an excessive step floor, `3dccf233-4075-461c-820d-abfe651cd3cc` still
 requested an unavailable A100, and `f126949b-7d2e-4ce5-876c-2594c910a122`
@@ -64,7 +64,11 @@ artifacts. `1edb8cb5-19cf-4e75-82cd-c8cb79eb9b71` failed because InstaNovo's
 trainer constructs `FinetuneScheduler` without passing `steps_per_epoch`, so
 epoch-based unfreezing cannot initialize; the override generator now converts
 the intended epoch boundaries to explicit `start_step` values before installing
-the config for the CLI.
+the config for the CLI. `05a8819d-5499-49ec-8a92-e4bc5f4db436` failed on a
+transient PRIDE HTTP 403 while downloading one mzXML file; the downloader now
+uses a stable user agent, retries retryable HTTP responses, resets stale
+partial downloads before retrying without `Range`, and falls back from
+`ftp.pride.ebi.ac.uk` to the `ftp.ebi.ac.uk` HTTPS mirror.
 
 ## What Runs In The Container
 
