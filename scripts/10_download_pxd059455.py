@@ -8,6 +8,7 @@ import hashlib
 import json
 import re
 import sys
+import time
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
@@ -19,6 +20,8 @@ from tqdm import tqdm
 PROJECT = "PXD059455"
 FILES_URL = f"https://www.ebi.ac.uk/pride/ws/archive/v2/projects/{PROJECT}/files"
 CHECKSUM_URL = "https://ftp.pride.ebi.ac.uk/pride/data/archive/2025/12/PXD059455/checksum.txt"
+REQUEST_HEADERS = {"User-Agent": "pxd059455-instanovo-finetune/1.0"}
+RETRY_STATUS_CODES = {403, 429, 500, 502, 503, 504}
 
 
 def parse_args() -> argparse.Namespace:
@@ -49,15 +52,21 @@ def labelled_raw_files(labels_path: str | None) -> set[str] | None:
     return raws
 
 
-def get_http_url(file_record: dict[str, Any]) -> str:
+def get_http_urls(file_record: dict[str, Any]) -> list[str]:
+    urls: list[str] = []
     for loc in file_record.get("publicFileLocations", []):
         value = loc.get("value", "")
         if value.startswith("ftp://"):
             parsed = urlparse(value)
-            return f"https://{parsed.netloc}{parsed.path}"
+            urls.append(f"https://{parsed.netloc}{parsed.path}")
+            if parsed.netloc == "ftp.pride.ebi.ac.uk":
+                urls.append(f"https://ftp.ebi.ac.uk{parsed.path}")
         if value.startswith("http://") or value.startswith("https://"):
-            return value
-    raise ValueError(f"No downloadable URL found for {file_record.get('fileName')}")
+            urls.append(value)
+    deduped = list(dict.fromkeys(urls))
+    if not deduped:
+        raise ValueError(f"No downloadable URL found for {file_record.get('fileName')}")
+    return deduped
 
 
 def wanted_files(
@@ -104,7 +113,7 @@ def sha1(path: Path) -> str:
 
 
 def load_checksum_map() -> dict[str, str]:
-    response = requests.get(CHECKSUM_URL, timeout=60)
+    response = requests.get(CHECKSUM_URL, timeout=60, headers=REQUEST_HEADERS)
     response.raise_for_status()
     checksums: dict[str, str] = {}
     for line in response.text.splitlines():
@@ -120,6 +129,52 @@ def load_checksum_map() -> dict[str, str]:
     return checksums
 
 
+def stream_to_tmp(url: str, tmp: Path, expected_size: int, force: bool, name: str) -> None:
+    for attempt in range(1, 5):
+        headers = dict(REQUEST_HEADERS)
+        resume_at = tmp.stat().st_size if tmp.exists() and not force else 0
+        mode = "ab" if resume_at else "wb"
+        if resume_at:
+            headers["Range"] = f"bytes={resume_at}-"
+
+        try:
+            with requests.get(url, stream=True, timeout=60, headers=headers) as response:
+                if response.status_code in {403, 416} and resume_at:
+                    print(
+                        f"{response.status_code} while resuming {name}; deleting partial file and retrying full download.",
+                        file=sys.stderr,
+                    )
+                    tmp.unlink(missing_ok=True)
+                    time.sleep(attempt)
+                    continue
+                if response.status_code in RETRY_STATUS_CODES and attempt < 4:
+                    print(
+                        f"{response.status_code} from {url} while downloading {name}; retrying attempt {attempt + 1}/4.",
+                        file=sys.stderr,
+                    )
+                    time.sleep(attempt * 5)
+                    continue
+                response.raise_for_status()
+                total = int(response.headers.get("content-length", "0")) + resume_at
+                with tmp.open(mode) as handle, tqdm(
+                    total=total or expected_size,
+                    initial=resume_at,
+                    unit="B",
+                    unit_scale=True,
+                    unit_divisor=1024,
+                    desc=name,
+                ) as progress:
+                    for chunk in response.iter_content(chunk_size=1024 * 1024):
+                        if chunk:
+                            handle.write(chunk)
+                            progress.update(len(chunk))
+                return
+        except requests.RequestException:
+            if attempt == 4:
+                raise
+            time.sleep(attempt * 5)
+
+
 def download(record: dict[str, Any], out_dir: Path, force: bool, checksum_map: dict[str, str]) -> dict[str, Any]:
     name = record["fileName"]
     target = out_dir / name
@@ -130,30 +185,19 @@ def download(record: dict[str, Any], out_dir: Path, force: bool, checksum_map: d
             print(f"Skipping existing file: {target}")
             return {"file": name, "status": "skipped", "bytes": target.stat().st_size}
 
-    url = get_http_url(record)
     tmp = target.with_suffix(target.suffix + ".part")
-    headers = {}
-    resume_at = tmp.stat().st_size if tmp.exists() and not force else 0
-    mode = "ab" if resume_at else "wb"
-    if resume_at:
-        headers["Range"] = f"bytes={resume_at}-"
-
-    print(f"Downloading {name} from {url}")
-    with requests.get(url, stream=True, timeout=60, headers=headers) as response:
-        response.raise_for_status()
-        total = int(response.headers.get("content-length", "0")) + resume_at
-        with tmp.open(mode) as handle, tqdm(
-            total=total or expected_size,
-            initial=resume_at,
-            unit="B",
-            unit_scale=True,
-            unit_divisor=1024,
-            desc=name,
-        ) as progress:
-            for chunk in response.iter_content(chunk_size=1024 * 1024):
-                if chunk:
-                    handle.write(chunk)
-                    progress.update(len(chunk))
+    last_error: requests.RequestException | None = None
+    for url in get_http_urls(record):
+        print(f"Downloading {name} from {url}")
+        try:
+            stream_to_tmp(url, tmp, expected_size, force, name)
+            break
+        except requests.RequestException as exc:
+            last_error = exc
+            print(f"Download failed from {url}: {exc}", file=sys.stderr)
+    else:
+        assert last_error is not None
+        raise last_error
 
     tmp.replace(target)
 
