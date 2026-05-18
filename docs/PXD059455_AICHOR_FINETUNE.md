@@ -1,12 +1,34 @@
-# PXD059455 Aichor InstaNovo Fine-Tune
+# PXD059455 InstaNovo Fine-Tune
 
-This branch replaces the failed ultra-light fine-tune with an Aichor GPU job.
-The failed run used plain peptide labels, froze almost the whole model, used
-`learning_rate=1e-7`, and trained for only 10 steps. This workflow builds
-PTM-aware labels, downloads PRIDE mzXML spectra inside the container, trains
-from the InstaNovo v1.2.0 checkpoint, and evaluates on held-out raw files.
+This branch replaces the previous ultra-light fine-tune attempt with a
+proper InstaNovo fine-tuning workflow for PXD059455. The failed run used plain
+peptide labels, froze almost the whole model, used `learning_rate=1e-7`, and
+trained for only 10 steps. The new workflow builds PTM-aware labels, uses the
+PRIDE peak lists for the matched spectra, trains from the InstaNovo v1.2.0
+checkpoint, and evaluates against the official checkpoint on held-out raw
+files.
+
+## Changes From Upstream
+
+Compared with the upstream InstaNovo/InstaNovo-P workflow, this branch adds the
+PXD059455-specific data preparation and run configuration:
+
+- PRIDE PXD059455 download and checksum verification for the labelled raw
+  files in `docs/msms.xlsx`.
+- Conversion from MaxQuant-style peptide annotations to InstaNovo residue and
+  UNIMOD tokens.
+- Content sniffing for PRIDE peak lists whose filenames end in `.mzXML` but
+  whose XML root is mzML.
+- Raw-file-level train/valid/test splits saved as InstaNovo
+  SpectrumDataFrame parquet shards.
+- A small-dataset fine-tuning schedule with validation/checkpointing once per
+  epoch and no artificial step floor.
+- A held-out comparison report for official InstaNovo v1.2.0 versus the
+  PXD059455 fine-tuned checkpoint.
 
 ## Submit
+
+AIchor is used here only as the available GPU execution platform.
 
 ```bash
 aichor submit local experiment --repo-dir . --message "proper PXD059455 InstaNovo finetune local tensorboard" --project-name "DTU Denovo Sequencing"
