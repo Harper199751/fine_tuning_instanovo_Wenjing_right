@@ -16,8 +16,8 @@ The default Aichor manifest requests one
 `NVIDIA-H100-80GB-HBM3-MIG-3g.40gb` GPU slice with 16 CPU cores and 160 GiB
 memory.
 
-Current submitted experiment: pending resubmission after the H100 MIG manifest
-update. The earlier experiments `03fea81f-ef4d-42c6-8a97-07fc4bcbb4c5` and
+Current submitted experiment: `f126949b-7d2e-4ce5-876c-2594c910a122`. The
+earlier experiments `03fea81f-ef4d-42c6-8a97-07fc4bcbb4c5` and
 `3dccf233-4075-461c-820d-abfe651cd3cc` were cancelled before the final run:
 the first because its step floor would have caused too many passes over this
 small label set, the second because it still requested an unavailable A100.
