@@ -12,14 +12,15 @@ from the InstaNovo v1.2.0 checkpoint, and evaluates on held-out raw files.
 aichor submit local experiment --repo-dir . --message "proper PXD059455 InstaNovo finetune reduced epochs" --project-name "DTU Denovo Sequencing"
 ```
 
-The default Aichor manifest requests one `NVIDIA-A100-SXM4-80GB` worker with
-16 CPU cores and 160 GiB memory. If that GPU product is unavailable on the
-target engine, change only `manifest.yaml` before submission.
+The default Aichor manifest requests one
+`NVIDIA-H100-80GB-HBM3-MIG-3g.40gb` GPU slice with 16 CPU cores and 160 GiB
+memory.
 
-Current submitted experiment: `3dccf233-4075-461c-820d-abfe651cd3cc`.
-The earlier experiment `03fea81f-ef4d-42c6-8a97-07fc4bcbb4c5` was cancelled
-before training because its step floor would have caused too many passes over
-this small label set.
+Current submitted experiment: pending resubmission after the H100 MIG manifest
+update. The earlier experiments `03fea81f-ef4d-42c6-8a97-07fc4bcbb4c5` and
+`3dccf233-4075-461c-820d-abfe651cd3cc` were cancelled before the final run:
+the first because its step floor would have caused too many passes over this
+small label set, the second because it still requested an unavailable A100.
 
 ## What Runs In The Container
 

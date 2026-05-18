@@ -19,9 +19,8 @@ spec:
         shmSizeGB: 16
         accelerators:
           gpu:
-            product: NVIDIA-A100-SXM4-80GB
+            product: NVIDIA-H100-80GB-HBM3-MIG-3g.40gb
             type: gpu
             count: 1
   tensorboard:
     enabled: true
-
