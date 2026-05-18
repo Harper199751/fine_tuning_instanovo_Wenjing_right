@@ -37,6 +37,25 @@ then
   exit 2
 fi
 
+echo "=== Installing InstaNovo CLI configs ==="
+python - <<'PY'
+import shutil
+from pathlib import Path
+
+import instanovo.utils
+
+src = Path("/app/configs/pxd059455")
+dst = Path(instanovo.utils.__file__).parent / "configs" / "pxd059455"
+if dst.exists() or dst.is_symlink():
+    if dst.is_symlink() or dst.is_file():
+        dst.unlink()
+    else:
+        shutil.rmtree(dst)
+dst.parent.mkdir(parents=True, exist_ok=True)
+shutil.copytree(src, dst)
+print(f"Installed {src} -> {dst}")
+PY
+
 echo "=== Preparing pretrained checkpoint ==="
 python scripts/09_prepare_instanovo_checkpoint.py \
   --model-id instanovo-v1.2.0 \
