@@ -38,25 +38,6 @@ then
   exit 2
 fi
 
-echo "=== Installing InstaNovo CLI configs ==="
-python - <<'PY'
-import shutil
-from pathlib import Path
-
-import instanovo.utils
-
-src = Path("/app/configs/pxd059455")
-dst = Path(instanovo.utils.__file__).parent / "configs" / "pxd059455"
-if dst.exists() or dst.is_symlink():
-    if dst.is_symlink() or dst.is_file():
-        dst.unlink()
-    else:
-        shutil.rmtree(dst)
-dst.parent.mkdir(parents=True, exist_ok=True)
-shutil.copytree(src, dst)
-print(f"Installed {src} -> {dst}")
-PY
-
 echo "=== Preparing pretrained checkpoint ==="
 python scripts/09_prepare_instanovo_checkpoint.py \
   --model-id instanovo-v1.2.0 \
@@ -92,8 +73,28 @@ python scripts/12_make_training_overrides.py \
   --effective-batch-size 64 \
   --epochs 6 \
   --min-steps 0 \
-  --out "${OVERRIDE_FILE}"
+  --out "${OVERRIDE_FILE}" \
+  --finetune-config "${ROOT_DIR}/configs/pxd059455/finetune/pxd059455.yaml"
 mapfile -t TRAIN_OVERRIDES < "${OVERRIDE_FILE}"
+
+echo "=== Installing InstaNovo CLI configs ==="
+python - <<'PY'
+import shutil
+from pathlib import Path
+
+import instanovo.utils
+
+src = Path("/app/configs/pxd059455")
+dst = Path(instanovo.utils.__file__).parent / "configs" / "pxd059455"
+if dst.exists() or dst.is_symlink():
+    if dst.is_symlink() or dst.is_file():
+        dst.unlink()
+    else:
+        shutil.rmtree(dst)
+dst.parent.mkdir(parents=True, exist_ok=True)
+shutil.copytree(src, dst)
+print(f"Installed {src} -> {dst}")
+PY
 
 echo "=== Training PXD059455 fine-tuned InstaNovo ==="
 export INSTANOVO_WORKDIR="${WORKDIR}"

@@ -16,7 +16,34 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--epochs", type=int, default=6)
     parser.add_argument("--min-steps", type=int, default=0)
     parser.add_argument("--out", required=True)
+    parser.add_argument("--finetune-config")
     return parser.parse_args()
+
+
+def write_finetune_config(path: Path, decoder_unfreeze_step: int, full_unfreeze_step: int) -> None:
+    """Write a step-based finetuning schedule for InstaNovo 1.2.x."""
+    path.write_text(
+        "\n".join(
+            [
+                "unfreeze_format: start_step",
+                "verbose: True",
+                "unfreeze_schedule:",
+                "  - start_step: 0",
+                "    params:",
+                "      - head.bias",
+                "      - head.weight",
+                "      - aa_embed.weight",
+                f"  - start_step: {decoder_unfreeze_step}",
+                "    params:",
+                "      - decoder.*",
+                f"  - start_step: {full_unfreeze_step}",
+                "    params:",
+                '      - "*"',
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
 
 
 def main() -> None:
@@ -28,6 +55,8 @@ def main() -> None:
     warmup_iters = max(5, int(round(training_steps * 0.05)))
     validation_interval = steps_per_epoch
     checkpoint_interval = validation_interval
+    decoder_unfreeze_step = steps_per_epoch
+    full_unfreeze_step = steps_per_epoch * 2
 
     lines = [
         f"training_steps={training_steps}",
@@ -41,6 +70,9 @@ def main() -> None:
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text("\n".join(lines) + "\n", encoding="utf-8")
     print("\n".join(lines))
+    if args.finetune_config:
+        write_finetune_config(Path(args.finetune_config), decoder_unfreeze_step, full_unfreeze_step)
+        print(f"Updated finetune schedule: {args.finetune_config}")
 
 
 if __name__ == "__main__":
