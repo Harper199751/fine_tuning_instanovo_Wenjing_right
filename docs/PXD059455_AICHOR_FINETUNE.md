@@ -31,14 +31,14 @@ PXD059455-specific data preparation and run configuration:
 [AIchor](https://aichor.ai/) is used here only as the available GPU execution platform.
 
 ```bash
-aichor submit local experiment --repo-dir . --message "proper PXD059455 InstaNovo finetune local tensorboard" --project-name "DTU Denovo Sequencing"
+aichor submit local experiment --repo-dir . --message "proper PXD059455 InstaNovo finetune step schedule" --project-name "DTU Denovo Sequencing"
 ```
 
 The default AIchor manifest requests one
 `NVIDIA-H100-80GB-HBM3-MIG-3g.40gb` GPU slice with 16 CPU cores and 160 GiB
 memory.
 
-Current submitted experiment: `1edb8cb5-19cf-4e75-82cd-c8cb79eb9b71`. Earlier
+Current submitted experiment: `05a8819d-5499-49ec-8a92-e4bc5f4db436`. Earlier
 experiments were superseded before the final run: `03fea81f-ef4d-42c6-8a97-07fc4bcbb4c5`
 had an excessive step floor, `3dccf233-4075-461c-820d-abfe651cd3cc` still
 requested an unavailable A100, and `f126949b-7d2e-4ce5-876c-2594c910a122`
@@ -57,7 +57,11 @@ forces TensorBoard logs to `AICHOR_LOGS_PATH` when that variable is present,
 which triggered an object-store `SignatureDoesNotMatch` error before training;
 the manifest now disables AIchor TensorBoard integration, and the entrypoint
 keeps TensorBoard event files local before uploading them with the other run
-artifacts.
+artifacts. `1edb8cb5-19cf-4e75-82cd-c8cb79eb9b71` failed because InstaNovo's
+trainer constructs `FinetuneScheduler` without passing `steps_per_epoch`, so
+epoch-based unfreezing cannot initialize; the override generator now converts
+the intended epoch boundaries to explicit `start_step` values before installing
+the config for the CLI.
 
 ## What Runs In The Container
 
@@ -83,8 +87,8 @@ artifacts.
 - Warmup: 5% of total steps, minimum 5 steps.
 - Learning rate: `5e-6`, cosine schedule.
 - Validation/checkpoint interval: once per training epoch.
-- Fine-tuning schedule: head from epoch 0, decoder from epoch 1, full model
-  from epoch 2.
+- Fine-tuning schedule: head from step 0, decoder after one computed training
+  epoch, full model after two computed training epochs.
 - Evaluation uses greedy decoding because InstaNovo 1.2.2 applies
   `suppressed_residues` only on the greedy path; this prevents the previous
   phospho-token collapse on a non-phospho dataset.
