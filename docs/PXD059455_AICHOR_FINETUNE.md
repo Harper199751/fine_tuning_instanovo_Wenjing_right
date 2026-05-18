@@ -34,14 +34,14 @@ repository, adapted for this wastewater dataset. The main changes are:
 [AIchor](https://aichor.ai/) is used here only as the available GPU execution platform.
 
 ```bash
-aichor submit local experiment --repo-dir . --message "proper PXD059455 InstaNovo finetune robust PRIDE downloads" --project-name "DTU Denovo Sequencing"
+aichor submit local experiment --repo-dir . --message "proper PXD059455 InstaNovo finetune trainer-step epochs" --project-name "DTU Denovo Sequencing"
 ```
 
 The default AIchor manifest requests one
 `NVIDIA-H100-80GB-HBM3-MIG-3g.40gb` GPU slice with 16 CPU cores and 160 GiB
 memory.
 
-Current submitted experiment: `4974ae3f-7e1b-466f-8ec6-b22f4988c67e`. Earlier
+Current submitted experiment: `9623d64d-c085-42de-8c73-e43f47ccbf55`. Earlier
 experiments were superseded before the final run: `03fea81f-ef4d-42c6-8a97-07fc4bcbb4c5`
 had an excessive step floor, `3dccf233-4075-461c-820d-abfe651cd3cc` still
 requested an unavailable A100, and `f126949b-7d2e-4ce5-876c-2594c910a122`
@@ -69,6 +69,11 @@ transient PRIDE HTTP 403 while downloading one mzXML file; the downloader now
 uses a stable user agent, retries retryable HTTP responses, resets stale
 partial downloads before retrying without `Range`, and falls back from
 `ftp.pride.ebi.ac.uk` to the `ftp.ebi.ac.uk` HTTPS mirror.
+`4974ae3f-7e1b-466f-8ec6-b22f4988c67e` succeeded, but the run was superseded
+because the step calculation used effective batch size instead of InstaNovo's
+trainer batch count; the override generator now computes epoch length from
+`train_batch_size`, so 6 epochs correspond to about 306 trainer steps for the
+current split.
 
 ## What Runs In The Container
 
@@ -107,9 +112,11 @@ partial downloads before retrying without `Range`, and falls back from
 ## Overfitting Guard
 
 The local label table currently parses to 967 usable labels across 19 raw
-files. The training script computes optimizer steps from the final train split
-instead of using a fixed step count. For the expected split size, this is about
-66 optimizer steps total, with validation and checkpointing once per epoch.
+files. The training script computes trainer steps from the final train split
+instead of using a fixed step count. For the current 831-spectrum train split,
+this is 51 trainer steps per epoch and 306 trainer steps total; with
+`grad_accumulation=4`, that is about 76 optimizer updates. Validation and
+checkpointing run once per computed training epoch.
 The best checkpoint is selected by validation loss and the final report still
 compares against the official InstaNovo checkpoint on held-out raw files.
 
