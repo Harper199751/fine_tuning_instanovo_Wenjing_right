@@ -16,7 +16,7 @@ The default Aichor manifest requests one
 `NVIDIA-H100-80GB-HBM3-MIG-3g.40gb` GPU slice with 16 CPU cores and 160 GiB
 memory.
 
-Current submitted experiment: `3810b0a8-cf70-4f97-9295-e3587aaaa466`. Earlier
+Current submitted experiment: `d55567ca-a917-4e5b-b02d-ed6f6e3123f7`. Earlier
 experiments were superseded before the final run: `03fea81f-ef4d-42c6-8a97-07fc4bcbb4c5`
 had an excessive step floor, `3dccf233-4075-461c-820d-abfe651cd3cc` still
 requested an unavailable A100, and `f126949b-7d2e-4ce5-876c-2594c910a122`
@@ -27,6 +27,10 @@ the downloader now verifies files against the SHA1 values in `checksum.txt`.
 `a5deb800-cc65-4f7b-9acc-4c15b506714e` failed because PRIDE names these peak
 lists `.mzXML` even though their XML root is mzML; the builder now sniffs the
 file content and chooses the mzML parser for those files.
+`3810b0a8-cf70-4f97-9295-e3587aaaa466` failed because the InstaNovo CLI
+resolves relative config paths under its installed package directory; the
+entrypoint now installs `configs/pxd059455` into the package config tree before
+training.
 
 ## What Runs In The Container
 
