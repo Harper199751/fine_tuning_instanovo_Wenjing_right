@@ -1,0 +1,40 @@
+# PXD059455 InstaNovo Reference Artifacts
+
+Reference artifacts from the successful PXD059455 InstaNovo fine-tuning run.
+
+- AIchor project: `2e6da747-d6d3-4f62-a056-b5b13d8db3fc`
+- AIchor experiment: `9623d64d-c085-42de-8c73-e43f47ccbf55`
+- Commit message: `proper PXD059455 InstaNovo finetune trainer-step epochs`
+- Model baseline: `instanovo-v1.2.0`
+
+## Contents
+
+- `dataset_metadata.json`: split counts, raw files by split, and matching
+  statistics.
+- `sdf/`: processed InstaNovo SpectrumDataFrame parquet shards and split
+  metadata.
+- `predictions/`: prediction CSVs for the official and fine-tuned checkpoints
+  on the held-out test split.
+- `reports/`: summary metrics, per-spectrum comparison table, and JSON report.
+- `tensorboard/`: TensorBoard event file from the fine-tuning run.
+- `SHA256SUMS`: checksums for the files in this reference bundle.
+
+## Result Summary
+
+Held-out test split: 78 spectra.
+
+| Metric | Official InstaNovo v1.2.0 | Fine-tuned |
+| --- | ---: | ---: |
+| AA precision | 0.77529 | 0.79437 |
+| AA recall | 0.77605 | 0.79747 |
+| AA error rate | 0.14314 | 0.12658 |
+| Peptide precision | 0.58974 | 0.62821 |
+| Peptide recall | 0.58974 | 0.62821 |
+| 20 ppm pass count | 66/78 | 67/78 |
+
+The trained checkpoint is not committed to Git because it is a large binary
+artifact. It remains available in AIchor output storage at:
+
+```text
+dtu-denovo-s-2e6da747d6d34f62-outputs:output/9623d64d-c085-42de-8c73-e43f47ccbf55/pxd059455_instanovo/model_best.ckpt
+```

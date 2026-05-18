@@ -41,6 +41,9 @@ memory.
 Reference successful experiment:
 `9623d64d-c085-42de-8c73-e43f47ccbf55`.
 
+Reference outputs from this run are committed under
+`reference_artifacts/pxd059455_instanovo_9623d64d/`.
+
 ## Pipeline
 
 1. `scripts/01_prepare_instanovo_checkpoint.py` downloads `instanovo-v1.2.0`
