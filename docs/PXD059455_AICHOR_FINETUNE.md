@@ -9,14 +9,14 @@ from the InstaNovo v1.2.0 checkpoint, and evaluates on held-out raw files.
 ## Submit
 
 ```bash
-aichor submit local experiment --repo-dir . --message "proper PXD059455 InstaNovo finetune reduced epochs" --project-name "DTU Denovo Sequencing"
+aichor submit local experiment --repo-dir . --message "proper PXD059455 InstaNovo finetune local tensorboard" --project-name "DTU Denovo Sequencing"
 ```
 
 The default Aichor manifest requests one
 `NVIDIA-H100-80GB-HBM3-MIG-3g.40gb` GPU slice with 16 CPU cores and 160 GiB
 memory.
 
-Current submitted experiment: `d55567ca-a917-4e5b-b02d-ed6f6e3123f7`. Earlier
+Current submitted experiment: `1edb8cb5-19cf-4e75-82cd-c8cb79eb9b71`. Earlier
 experiments were superseded before the final run: `03fea81f-ef4d-42c6-8a97-07fc4bcbb4c5`
 had an excessive step floor, `3dccf233-4075-461c-820d-abfe651cd3cc` still
 requested an unavailable A100, and `f126949b-7d2e-4ce5-876c-2594c910a122`
@@ -30,7 +30,12 @@ file content and chooses the mzML parser for those files.
 `3810b0a8-cf70-4f97-9295-e3587aaaa466` failed because the InstaNovo CLI
 resolves relative config paths under its installed package directory; the
 entrypoint now installs `configs/pxd059455` into the package config tree before
-training.
+training. `d55567ca-a917-4e5b-b02d-ed6f6e3123f7` failed because InstaNovo
+forces TensorBoard logs to `AICHOR_LOGS_PATH` when that variable is present,
+which triggered an object-store `SignatureDoesNotMatch` error before training;
+the manifest now disables AIchor TensorBoard integration, and the entrypoint
+keeps TensorBoard event files local before uploading them with the other run
+artifacts.
 
 ## What Runs In The Container
 
@@ -91,6 +96,7 @@ The job writes local artifacts under `${INSTANOVO_WORKDIR:-/tmp/instanovo_pxd059
 - `processed/dataset_metadata.json`
 - `processed/sdf/`
 - `models/pxd059455_instanovo/model_best.ckpt`
+- `tensorboard/`
 - `predictions/official_instanovo_v1.2.0_test.csv`
 - `predictions/pxd059455_finetuned_test.csv`
 - `reports/summary_official_vs_finetuned.csv`
