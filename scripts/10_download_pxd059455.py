@@ -6,7 +6,6 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
-import os
 import re
 import sys
 from pathlib import Path
@@ -19,6 +18,7 @@ from tqdm import tqdm
 
 PROJECT = "PXD059455"
 FILES_URL = f"https://www.ebi.ac.uk/pride/ws/archive/v2/projects/{PROJECT}/files"
+CHECKSUM_URL = "https://ftp.pride.ebi.ac.uk/pride/data/archive/2025/12/PXD059455/checksum.txt"
 
 
 def parse_args() -> argparse.Namespace:
@@ -95,19 +95,35 @@ def wanted_files(
     return metadata + mzxml + raw
 
 
-def sha256(path: Path) -> str:
-    digest = hashlib.sha256()
+def sha1(path: Path) -> str:
+    digest = hashlib.sha1()
     with path.open("rb") as handle:
         for chunk in iter(lambda: handle.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
 
 
-def download(record: dict[str, Any], out_dir: Path, force: bool) -> dict[str, Any]:
+def load_checksum_map() -> dict[str, str]:
+    response = requests.get(CHECKSUM_URL, timeout=60)
+    response.raise_for_status()
+    checksums: dict[str, str] = {}
+    for line in response.text.splitlines():
+        line = line.strip()
+        if not line or line.startswith("#"):
+            continue
+        parts = re.split(r"\s+", line)
+        if len(parts) < 2:
+            continue
+        file_path, digest = parts[0], parts[-1]
+        if re.fullmatch(r"[0-9a-fA-F]{40}", digest):
+            checksums[Path(file_path.replace("\\", "/")).name] = digest.lower()
+    return checksums
+
+
+def download(record: dict[str, Any], out_dir: Path, force: bool, checksum_map: dict[str, str]) -> dict[str, Any]:
     name = record["fileName"]
     target = out_dir / name
     expected_size = int(record.get("fileSizeBytes") or 0)
-    accession = str(record.get("accession") or "")
 
     if target.exists() and not force:
         if expected_size == 0 or target.stat().st_size == expected_size:
@@ -144,10 +160,11 @@ def download(record: dict[str, Any], out_dir: Path, force: bool) -> dict[str, An
     if expected_size and target.stat().st_size != expected_size:
         raise RuntimeError(f"Size mismatch for {target}: got {target.stat().st_size}, expected {expected_size}")
 
-    if re.fullmatch(r"[0-9a-fA-F]{64}", accession):
-        observed = sha256(target)
-        if observed.lower() != accession.lower():
-            raise RuntimeError(f"SHA256 mismatch for {target}: got {observed}, expected {accession}")
+    expected_sha1 = checksum_map.get(name)
+    if expected_sha1:
+        observed = sha1(target)
+        if observed.lower() != expected_sha1:
+            raise RuntimeError(f"SHA1 mismatch for {target}: got {observed}, expected {expected_sha1}")
 
     return {"file": name, "status": "downloaded", "bytes": target.stat().st_size}
 
@@ -160,13 +177,14 @@ def main() -> None:
     response = requests.get(FILES_URL, timeout=60)
     response.raise_for_status()
     files = response.json()
+    checksum_map = load_checksum_map()
     selected = wanted_files(files, args.include_raw, args.sample_regex, args.limit, labelled_raw_files(args.labels))
     if not selected:
         raise SystemExit("No PRIDE files selected for download.")
 
     manifest = []
     for record in selected:
-        manifest.append(download(record, out_dir, args.force))
+        manifest.append(download(record, out_dir, args.force, checksum_map))
 
     manifest_path = out_dir / "download_manifest.json"
     manifest_path.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
