@@ -70,7 +70,8 @@ python scripts/03_build_pxd059455_sdf.py "${BUILD_ARGS[@]}"
 echo "=== Computing training-step overrides ==="
 python scripts/04_make_training_overrides.py \
   --metadata "${PROCESSED_DIR}/dataset_metadata.json" \
-  --effective-batch-size 64 \
+  --train-batch-size 16 \
+  --grad-accumulation 4 \
   --epochs 6 \
   --min-steps 0 \
   --out "${OVERRIDE_FILE}" \

@@ -5,14 +5,14 @@ from __future__ import annotations
 
 import argparse
 import json
-import math
 from pathlib import Path
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--metadata", required=True)
-    parser.add_argument("--effective-batch-size", type=int, default=64)
+    parser.add_argument("--train-batch-size", type=int, default=16)
+    parser.add_argument("--grad-accumulation", type=int, default=4)
     parser.add_argument("--epochs", type=int, default=6)
     parser.add_argument("--min-steps", type=int, default=0)
     parser.add_argument("--out", required=True)
@@ -50,7 +50,7 @@ def main() -> None:
     args = parse_args()
     metadata = json.loads(Path(args.metadata).read_text(encoding="utf-8"))
     train_count = int(metadata["split_counts"]["train"])
-    steps_per_epoch = max(1, math.ceil(train_count / args.effective_batch_size))
+    steps_per_epoch = max(1, train_count // args.train_batch_size)
     training_steps = max(args.min_steps, steps_per_epoch * args.epochs)
     warmup_iters = max(5, int(round(training_steps * 0.05)))
     validation_interval = steps_per_epoch
@@ -69,6 +69,12 @@ def main() -> None:
     output = Path(args.out)
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    effective_batch_size = args.train_batch_size * args.grad_accumulation
+    print(f"train_count={train_count}")
+    print(f"train_batch_size={args.train_batch_size}")
+    print(f"grad_accumulation={args.grad_accumulation}")
+    print(f"effective_batch_size={effective_batch_size}")
+    print(f"steps_per_epoch={steps_per_epoch}")
     print("\n".join(lines))
     if args.finetune_config:
         write_finetune_config(Path(args.finetune_config), decoder_unfreeze_step, full_unfreeze_step)
