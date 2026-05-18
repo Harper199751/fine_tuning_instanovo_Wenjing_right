@@ -15,7 +15,7 @@ from typing import Any
 import numpy as np
 import pandas as pd
 import polars as pl
-from pyteomics import mzxml
+from pyteomics import mzml, mzxml
 
 from instanovo.constants import PROTON_MASS_AMU
 from instanovo.utils.data_handler import SpectrumDataFrame
@@ -205,12 +205,53 @@ def scan_number(spec: dict[str, Any]) -> int | None:
     return None
 
 
+def is_mzml_file(path: Path) -> bool:
+    with path.open("rb") as handle:
+        header = handle.read(4096).lower()
+    return b"<mzml" in header or b"<indexedmzml" in header
+
+
+def iter_spectra(path: Path):
+    reader_cls = mzml.MzML if is_mzml_file(path) else mzxml.MzXML
+    with reader_cls(str(path)) as reader:
+        yield from reader
+
+
+def find_nested_value(value: Any, keys: set[str]) -> Any:
+    if isinstance(value, dict):
+        for key, nested in value.items():
+            if key in keys:
+                return nested
+            found = find_nested_value(nested, keys)
+            if found is not None:
+                return found
+    elif isinstance(value, list):
+        for nested in value:
+            found = find_nested_value(nested, keys)
+            if found is not None:
+                return found
+    return None
+
+
 def precursor_mz(spec: dict[str, Any]) -> float | None:
     value = spec.get("precursorMz")
+    if value is None:
+        value = spec.get("selected ion m/z")
+    if value is None:
+        value = spec.get("isolation window target m/z")
+    if value is None:
+        value = find_nested_value(
+            spec,
+            {
+                "precursorMz",
+                "selected ion m/z",
+                "isolation window target m/z",
+            },
+        )
     if isinstance(value, list) and value:
         first = value[0]
         if isinstance(first, dict):
-            for key in ("precursorMz", "value"):
+            for key in ("precursorMz", "selected ion m/z", "isolation window target m/z", "value"):
                 if key in first:
                     return float(first[key])
         return float(first)
@@ -247,52 +288,52 @@ def iter_matching_spectra(
         raw = path.stem
         if raw not in needed_raws:
             continue
-        print(f"Reading {path.name}")
-        with mzxml.MzXML(str(path)) as reader:
-            for spec in reader:
-                if int(spec.get("msLevel", spec.get("ms level", 0)) or 0) != 2:
-                    continue
-                scan = scan_number(spec)
-                if scan is None:
-                    stats["missing_scan_number"] += 1
-                    continue
-                label = label_map.get((raw, scan))
-                if label is None:
-                    stats["unlabelled_ms2"] += 1
-                    continue
+        parser_name = "mzML" if is_mzml_file(path) else "mzXML"
+        print(f"Reading {path.name} as {parser_name}")
+        for spec in iter_spectra(path):
+            if int(spec.get("msLevel", spec.get("ms level", 0)) or 0) != 2:
+                continue
+            scan = scan_number(spec)
+            if scan is None:
+                stats["missing_scan_number"] += 1
+                continue
+            label = label_map.get((raw, scan))
+            if label is None:
+                stats["unlabelled_ms2"] += 1
+                continue
 
-                mz = precursor_mz(spec) or float(label["label_precursor_mz"])
-                charge = int(label["precursor_charge"])
-                theoretical_mz = sequence_mz(label["sequence"], charge)
-                label_mass_error_ppm = ppm_error(theoretical_mz, float(label["label_precursor_mz"]))
-                spectrum_mass_error_ppm = ppm_error(theoretical_mz, mz)
-                if abs(label_mass_error_ppm) > max_ppm and abs(spectrum_mass_error_ppm) > max_ppm:
-                    stats[f"mass_error_over_{max_ppm:g}ppm"] += 1
-                    continue
+            mz = precursor_mz(spec) or float(label["label_precursor_mz"])
+            charge = int(label["precursor_charge"])
+            theoretical_mz = sequence_mz(label["sequence"], charge)
+            label_mass_error_ppm = ppm_error(theoretical_mz, float(label["label_precursor_mz"]))
+            spectrum_mass_error_ppm = ppm_error(theoretical_mz, mz)
+            if abs(label_mass_error_ppm) > max_ppm and abs(spectrum_mass_error_ppm) > max_ppm:
+                stats[f"mass_error_over_{max_ppm:g}ppm"] += 1
+                continue
 
-                mz_array = np.asarray(spec["m/z array"], dtype=float)
-                intensity_array = np.asarray(spec["intensity array"], dtype=float)
-                if mz_array.size == 0 or intensity_array.size == 0 or mz_array.size != intensity_array.size:
-                    stats["empty_or_invalid_peak_array"] += 1
-                    continue
+            mz_array = np.asarray(spec["m/z array"], dtype=float)
+            intensity_array = np.asarray(spec["intensity array"], dtype=float)
+            if mz_array.size == 0 or intensity_array.size == 0 or mz_array.size != intensity_array.size:
+                stats["empty_or_invalid_peak_array"] += 1
+                continue
 
-                rows.append(
-                    {
-                        "sequence": label["sequence"],
-                        "precursor_mz": float(mz),
-                        "precursor_charge": charge,
-                        "retention_time": float(label["retention_time"]) if not math.isnan(label["retention_time"]) else 0.0,
-                        "mz_array": mz_array.tolist(),
-                        "intensity_array": intensity_array.tolist(),
-                        "raw_file": raw,
-                        "scan_number": scan,
-                        "spectrum_id": f"{raw}:{scan}",
-                        "label_precursor_mz": float(label["label_precursor_mz"]),
-                        "label_mass_error_ppm": float(label_mass_error_ppm),
-                        "spectrum_mass_error_ppm": float(spectrum_mass_error_ppm),
-                    }
-                )
-                stats["matched"] += 1
+            rows.append(
+                {
+                    "sequence": label["sequence"],
+                    "precursor_mz": float(mz),
+                    "precursor_charge": charge,
+                    "retention_time": float(label["retention_time"]) if not math.isnan(label["retention_time"]) else 0.0,
+                    "mz_array": mz_array.tolist(),
+                    "intensity_array": intensity_array.tolist(),
+                    "raw_file": raw,
+                    "scan_number": scan,
+                    "spectrum_id": f"{raw}:{scan}",
+                    "label_precursor_mz": float(label["label_precursor_mz"]),
+                    "label_mass_error_ppm": float(label_mass_error_ppm),
+                    "spectrum_mass_error_ppm": float(spectrum_mass_error_ppm),
+                }
+            )
+            stats["matched"] += 1
     return rows, stats
 
 
