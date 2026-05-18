@@ -10,8 +10,11 @@ files.
 
 ## Changes From Upstream
 
-Compared with the upstream InstaNovo/InstaNovo-P workflow, this branch adds the
-PXD059455-specific data preparation and run configuration:
+Compared with the upstream
+[fine_tuning_instanovo_Wenjing_right](https://github.com/Harper199751/fine_tuning_instanovo_Wenjing_right)
+repository, this branch replaces the previous ultra-light training attempt
+with a fine-tuning workflow based on the InstaNovo-P publication and reference
+repository, adapted for this wastewater dataset. The main changes are:
 
 - PRIDE PXD059455 download and checksum verification for the labelled raw
   files in `docs/msms.xlsx`.
