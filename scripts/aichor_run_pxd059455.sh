@@ -11,8 +11,9 @@ MODEL_DIR="${WORKDIR}/models/pxd059455_instanovo"
 PRED_DIR="${WORKDIR}/predictions"
 REPORT_DIR="${WORKDIR}/reports"
 OVERRIDE_FILE="${WORKDIR}/training_overrides.txt"
+TENSORBOARD_DIR="${WORKDIR}/tensorboard"
 
-mkdir -p "${RAW_DIR}" "${SDF_DIR}" "${CHECKPOINT_DIR}" "${MODEL_DIR}" "${PRED_DIR}" "${REPORT_DIR}"
+mkdir -p "${RAW_DIR}" "${SDF_DIR}" "${CHECKPOINT_DIR}" "${MODEL_DIR}" "${PRED_DIR}" "${REPORT_DIR}" "${TENSORBOARD_DIR}"
 cd "${ROOT_DIR}"
 
 echo "=== Runtime ==="
@@ -96,6 +97,10 @@ mapfile -t TRAIN_OVERRIDES < "${OVERRIDE_FILE}"
 
 echo "=== Training PXD059455 fine-tuned InstaNovo ==="
 export INSTANOVO_WORKDIR="${WORKDIR}"
+if [[ -n "${AICHOR_LOGS_PATH:-}" ]]; then
+  echo "Disabling InstaNovo's AIchor TensorBoard hook; local TensorBoard logs remain under ${TENSORBOARD_DIR}."
+  unset AICHOR_LOGS_PATH
+fi
 instanovo transformer train \
   --config-path configs/pxd059455 \
   --config-name instanovo_finetune \
@@ -143,6 +148,7 @@ python scripts/14_upload_aichor_artifacts.py \
   "${PROCESSED_DIR}/dataset_metadata.json" \
   "${SDF_DIR}" \
   "${MODEL_DIR}" \
+  "${TENSORBOARD_DIR}" \
   "${PRED_DIR}" \
   "${REPORT_DIR}" || true
 
