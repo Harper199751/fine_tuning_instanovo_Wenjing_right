@@ -97,6 +97,47 @@ split, the fine-tuned checkpoint improved:
 
 No phospho predictions were emitted.
 
+## Reproduce From Checkpoint
+
+The fine-tuned checkpoint is too large to commit directly to Git. The intended
+release location is:
+
+```text
+https://github.com/BioGeek/fine_tuning_instanovo_Wenjing_right/releases/download/pxd059455-finetune/model_best.ckpt
+```
+
+Run the reproducibility check against the committed held-out test artifacts:
+
+```bash
+scripts/reproduce_release_checkpoint.sh
+```
+
+The script downloads `model_best.ckpt`, installs the local `configs/pxd059455`
+Hydra config into the active InstaNovo environment, runs
+`instanovo transformer predict --evaluation` on the committed test
+SpectrumDataFrame, and compares the reproduced metrics with
+`reference_artifacts/pxd059455_instanovo_9623d64d/reports/run_report.json`.
+
+Use these environment variables when the active shell does not already resolve
+the correct Python and InstaNovo executables:
+
+```bash
+PYTHON=/path/to/python \
+INSTANOVO=/path/to/instanovo \
+PXD059455_REPRO_WORKDIR=/tmp/pxd059455_release_repro \
+scripts/reproduce_release_checkpoint.sh
+```
+
+Validation note: the current release asset downloads and loads successfully
+with SHA256
+`923cfcf9fd4d5be366cfeee528c4793bc62e489cdb0702e5d266a7dcc4c6b5fd`, but it
+does not reproduce the final reference metrics above. It reproduces the earlier
+short-run metrics instead: amino-acid precision `0.78641`, amino-acid recall
+`0.78870`, amino-acid error rate `0.13729`, and peptide precision/recall
+`0.58974`. Replace the release asset with the `model_best.ckpt` from reference
+experiment `9623d64d-c085-42de-8c73-e43f47ccbf55` before using the release URL
+as the canonical final checkpoint.
+
 ## Smoke Test Knobs
 
 These environment variables can be set in the container or manifest for a

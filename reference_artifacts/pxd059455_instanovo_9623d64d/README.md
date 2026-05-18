@@ -38,3 +38,23 @@ artifact. It remains available in AIchor output storage at:
 ```text
 dtu-denovo-s-2e6da747d6d34f62-outputs:output/9623d64d-c085-42de-8c73-e43f47ccbf55/pxd059455_instanovo/model_best.ckpt
 ```
+
+The intended public release URL for the checkpoint is:
+
+```text
+https://github.com/BioGeek/fine_tuning_instanovo_Wenjing_right/releases/download/pxd059455-finetune/model_best.ckpt
+```
+
+Use `scripts/reproduce_release_checkpoint.sh` from the repository root to
+download that checkpoint, run it on the committed held-out test split, and
+compare the reproduced metrics with `reports/run_report.json`.
+
+Validation note: the current release asset downloads and loads successfully
+with SHA256
+`923cfcf9fd4d5be366cfeee528c4793bc62e489cdb0702e5d266a7dcc4c6b5fd`, but it
+does not reproduce this reference bundle. It produces amino-acid precision
+`0.78641` and peptide precision `0.58974`, matching the earlier short run
+rather than the final reference metrics in the table above. Replace the release
+asset with the `model_best.ckpt` from experiment
+`9623d64d-c085-42de-8c73-e43f47ccbf55` before treating the release URL as the
+canonical final checkpoint.
