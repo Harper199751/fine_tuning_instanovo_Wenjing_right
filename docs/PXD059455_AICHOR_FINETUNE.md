@@ -2,29 +2,34 @@
 
 This workflow fine-tunes InstaNovo on the PXD059455 wastewater metaproteomics
 dataset using the fine-tuning approach described by InstaNovo-P, adapted to the
-labels and peak lists available for this dataset. It builds PTM-aware labels,
-uses the PRIDE peak lists for matched spectra, trains from the official
-InstaNovo v1.2.0 checkpoint, and evaluates the fine-tuned checkpoint against the
-official checkpoint on held-out raw files.
+MaxQuant-derived PSM labels and public PRIDE peak-list files available for this
+dataset. It converts the labels from `docs/msms.xlsx` into PTM-aware InstaNovo
+residue tokens, downloads the corresponding PRIDE mzXML/mzML peak-list files,
+matches labelled scans back to those spectra, trains from the official InstaNovo
+v1.2.0 checkpoint, and evaluates the fine-tuned checkpoint against the official
+checkpoint on held-out raw files.
 
 Compared with the upstream
 [fine_tuning_instanovo_Wenjing_right](https://github.com/Harper199751/fine_tuning_instanovo_Wenjing_right)
 repository, this branch adds a reproducible data download, SpectrumDataFrame
-construction, small-dataset fine-tuning schedule, held-out evaluation, and
-artifact upload path.
+construction, raw-file-level split with traceable held-out evaluation,
+small-dataset fine-tuning schedule, and artifact upload path.
 
 ## Inputs
 
-- `docs/msms.xlsx`: labelled PSM table used to select raw files and build
-  peptide targets.
-- PRIDE project `PXD059455`: metadata, checksums, and mzXML/mzML peak lists are
-  downloaded inside the container.
+- `docs/msms.xlsx`: MaxQuant-derived high-confidence PSM table used as the
+  label source and to select the raw files needed for this dataset.
+- PRIDE project `PXD059455`: metadata, checksums, and mzXML/mzML peak-list files
+  are downloaded inside the container as the reproducible source of spectra.
 - InstaNovo model `instanovo-v1.2.0`: downloaded at runtime and converted to a
   trainer-compatible resume checkpoint.
 
-The workflow converts MaxQuant-style modified peptide annotations to InstaNovo
-residue and UNIMOD tokens, verifies PRIDE downloads against `checksum.txt`, and
-splits data by raw file into train, validation, and test partitions.
+The workflow treats `docs/msms.xlsx` as the label source and the PRIDE
+mzXML/mzML files as the spectrum source. It converts MaxQuant-style modified
+peptide annotations to InstaNovo residue and UNIMOD tokens, verifies PRIDE
+downloads against `checksum.txt`, matches labelled scans back to the downloaded
+peak-list files, and splits data by raw file into train, validation, and test
+partitions.
 
 ## Submit
 
@@ -49,10 +54,11 @@ Reference outputs from this run are committed under
 1. `scripts/01_prepare_instanovo_checkpoint.py` downloads `instanovo-v1.2.0`
    and writes a trainer-compatible resume checkpoint.
 2. `scripts/02_download_pxd059455.py` downloads PXD059455 metadata and the
-   mzXML/mzML files whose raw-file names appear in `docs/msms.xlsx`.
-3. `scripts/03_build_pxd059455_sdf.py` maps labels to PRIDE scans, encodes
-   PTMs as UNIMOD tokens, filters precursor mass mismatches, and writes
-   train/valid/test SpectrumDataFrame parquet shards.
+   mzXML/mzML peak-list files whose raw-file names appear in `docs/msms.xlsx`.
+3. `scripts/03_build_pxd059455_sdf.py` maps the MaxQuant-derived labels from
+   `docs/msms.xlsx` to scans in the PRIDE peak-list files, encodes PTMs as
+   UNIMOD tokens, filters precursor mass mismatches, and writes train/valid/test
+   SpectrumDataFrame parquet shards.
 4. `scripts/04_make_training_overrides.py` computes training steps and the
    step-based unfreezing schedule from the prepared train split.
 5. `instanovo transformer train` fine-tunes with `configs/pxd059455`.
