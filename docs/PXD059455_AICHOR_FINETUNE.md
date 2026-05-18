@@ -16,11 +16,12 @@ The default Aichor manifest requests one
 `NVIDIA-H100-80GB-HBM3-MIG-3g.40gb` GPU slice with 16 CPU cores and 160 GiB
 memory.
 
-Current submitted experiment: `f126949b-7d2e-4ce5-876c-2594c910a122`. The
-earlier experiments `03fea81f-ef4d-42c6-8a97-07fc4bcbb4c5` and
-`3dccf233-4075-461c-820d-abfe651cd3cc` were cancelled before the final run:
-the first because its step floor would have caused too many passes over this
-small label set, the second because it still requested an unavailable A100.
+Current submitted experiment: `f55be93a-b5c2-4b3d-ad68-ff2c4fe08b6f`. Earlier
+experiments were superseded before the final run: `03fea81f-ef4d-42c6-8a97-07fc4bcbb4c5`
+had an excessive step floor, `3dccf233-4075-461c-820d-abfe651cd3cc` still
+requested an unavailable A100, and `f126949b-7d2e-4ce5-876c-2594c910a122`
+failed during checkpoint preparation because InstaNovo returned a plain dict
+config in the container.
 
 ## What Runs In The Container
 
