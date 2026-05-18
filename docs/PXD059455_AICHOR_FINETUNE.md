@@ -16,7 +16,7 @@ The default Aichor manifest requests one
 `NVIDIA-H100-80GB-HBM3-MIG-3g.40gb` GPU slice with 16 CPU cores and 160 GiB
 memory.
 
-Current submitted experiment: `a5deb800-cc65-4f7b-9acc-4c15b506714e`. Earlier
+Current submitted experiment: `3810b0a8-cf70-4f97-9295-e3587aaaa466`. Earlier
 experiments were superseded before the final run: `03fea81f-ef4d-42c6-8a97-07fc4bcbb4c5`
 had an excessive step floor, `3dccf233-4075-461c-820d-abfe651cd3cc` still
 requested an unavailable A100, and `f126949b-7d2e-4ce5-876c-2594c910a122`
@@ -24,6 +24,9 @@ failed during checkpoint preparation because InstaNovo returned a plain dict
 config in the container. `f55be93a-b5c2-4b3d-ad68-ff2c4fe08b6f` failed because
 the downloader incorrectly treated PRIDE file accessions as SHA256 checksums;
 the downloader now verifies files against the SHA1 values in `checksum.txt`.
+`a5deb800-cc65-4f7b-9acc-4c15b506714e` failed because PRIDE names these peak
+lists `.mzXML` even though their XML root is mzML; the builder now sniffs the
+file content and chooses the mzML parser for those files.
 
 ## What Runs In The Container
 
