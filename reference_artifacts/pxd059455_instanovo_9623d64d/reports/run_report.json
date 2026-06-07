@@ -1,0 +1,27 @@
+{
+  "official": {
+    "model": "official_instanovo_v1.2.0",
+    "n_spectra": 78,
+    "aa_precision": 0.7752918287937743,
+    "aa_recall": 0.7760467380720545,
+    "aa_error_rate": 0.14313534566699124,
+    "peptide_precision": 0.5897435897435898,
+    "peptide_recall": 0.5897435897435898,
+    "pass_20ppm_count": 66,
+    "pass_20ppm_rate": 0.8461538461538461,
+    "phospho_prediction_count": 0
+  },
+  "finetuned": {
+    "model": "pxd059455_finetuned",
+    "n_spectra": 78,
+    "aa_precision": 0.8075801749271136,
+    "aa_recall": 0.8091528724440117,
+    "aa_error_rate": 0.11684518013631938,
+    "peptide_precision": 0.6282051282051282,
+    "peptide_recall": 0.6282051282051282,
+    "pass_20ppm_count": 67,
+    "pass_20ppm_rate": 0.8589743589743589,
+    "phospho_prediction_count": 0
+  },
+  "accepted": true
+}

@@ -1,0 +1,244 @@
+#!/usr/bin/env python
+"""Download PRIDE PXD059455 files inside the training container."""
+
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import re
+import sys
+import time
+from pathlib import Path
+from typing import Any
+from urllib.parse import urlparse
+
+import requests
+from tqdm import tqdm
+
+
+PROJECT = "PXD059455"
+FILES_URL = f"https://www.ebi.ac.uk/pride/ws/archive/v2/projects/{PROJECT}/files"
+CHECKSUM_URL = "https://ftp.pride.ebi.ac.uk/pride/data/archive/2025/12/PXD059455/checksum.txt"
+REQUEST_HEADERS = {"User-Agent": "pxd059455-instanovo-finetune/1.0"}
+RETRY_STATUS_CODES = {403, 429, 500, 502, 503, 504}
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--out-dir", required=True)
+    parser.add_argument("--include-raw", action="store_true", help="Also download vendor .raw files.")
+    parser.add_argument("--labels", default=None, help="Optional msms.xlsx path; when set, download only labelled raw files.")
+    parser.add_argument("--limit", type=int, default=None, help="Download only the first N mzXML files for smoke tests.")
+    parser.add_argument("--sample-regex", default=None, help="Only download files whose names match this regex.")
+    parser.add_argument("--force", action="store_true")
+    return parser.parse_args()
+
+
+def labelled_raw_files(labels_path: str | None) -> set[str] | None:
+    if labels_path is None:
+        return None
+    import pandas as pd
+
+    labels = pd.read_excel(labels_path, usecols=["Raw file"])
+    raws = set()
+    for value in labels["Raw file"].dropna():
+        raw = str(value).strip()
+        if raw.lower().endswith(".raw"):
+            raw = raw[:-4]
+        raws.add(raw)
+    if not raws:
+        raise ValueError(f"No raw files found in labels: {labels_path}")
+    return raws
+
+
+def get_http_urls(file_record: dict[str, Any]) -> list[str]:
+    urls: list[str] = []
+    for loc in file_record.get("publicFileLocations", []):
+        value = loc.get("value", "")
+        if value.startswith("ftp://"):
+            parsed = urlparse(value)
+            urls.append(f"https://{parsed.netloc}{parsed.path}")
+            if parsed.netloc == "ftp.pride.ebi.ac.uk":
+                urls.append(f"https://ftp.ebi.ac.uk{parsed.path}")
+        if value.startswith("http://") or value.startswith("https://"):
+            urls.append(value)
+    deduped = list(dict.fromkeys(urls))
+    if not deduped:
+        raise ValueError(f"No downloadable URL found for {file_record.get('fileName')}")
+    return deduped
+
+
+def wanted_files(
+    files: list[dict[str, Any]],
+    include_raw: bool,
+    sample_regex: str | None,
+    limit: int | None,
+    labelled_raws: set[str] | None,
+) -> list[dict[str, Any]]:
+    pattern = re.compile(sample_regex) if sample_regex else None
+    mzxml = []
+    metadata = []
+    raw = []
+    for record in files:
+        name = record["fileName"]
+        if pattern and not pattern.search(name):
+            continue
+        lower = name.lower()
+        if lower.endswith(".mzxml"):
+            if labelled_raws is not None and Path(name).stem not in labelled_raws:
+                continue
+            mzxml.append(record)
+        elif lower in {"checksum.txt"} or lower.endswith(".xlsx") or lower.endswith(".fasta"):
+            metadata.append(record)
+        elif include_raw and lower.endswith(".raw"):
+            if labelled_raws is not None and Path(name).stem not in labelled_raws:
+                continue
+            raw.append(record)
+
+    mzxml = sorted(mzxml, key=lambda x: x["fileName"])
+    if limit is not None:
+        mzxml = mzxml[:limit]
+    metadata = sorted(metadata, key=lambda x: x["fileName"])
+    raw = sorted(raw, key=lambda x: x["fileName"])
+    return metadata + mzxml + raw
+
+
+def sha1(path: Path) -> str:
+    digest = hashlib.sha1()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def load_checksum_map() -> dict[str, str]:
+    response = requests.get(CHECKSUM_URL, timeout=60, headers=REQUEST_HEADERS)
+    response.raise_for_status()
+    checksums: dict[str, str] = {}
+    for line in response.text.splitlines():
+        line = line.strip()
+        if not line or line.startswith("#"):
+            continue
+        parts = re.split(r"\s+", line)
+        if len(parts) < 2:
+            continue
+        file_path, digest = parts[0], parts[-1]
+        if re.fullmatch(r"[0-9a-fA-F]{40}", digest):
+            checksums[Path(file_path.replace("\\", "/")).name] = digest.lower()
+    return checksums
+
+
+def stream_to_tmp(url: str, tmp: Path, expected_size: int, force: bool, name: str) -> None:
+    for attempt in range(1, 5):
+        headers = dict(REQUEST_HEADERS)
+        resume_at = tmp.stat().st_size if tmp.exists() and not force else 0
+        mode = "ab" if resume_at else "wb"
+        if resume_at:
+            headers["Range"] = f"bytes={resume_at}-"
+
+        try:
+            with requests.get(url, stream=True, timeout=60, headers=headers) as response:
+                if response.status_code in {403, 416} and resume_at:
+                    print(
+                        f"{response.status_code} while resuming {name}; deleting partial file and retrying full download.",
+                        file=sys.stderr,
+                    )
+                    tmp.unlink(missing_ok=True)
+                    time.sleep(attempt)
+                    continue
+                if response.status_code in RETRY_STATUS_CODES and attempt < 4:
+                    print(
+                        f"{response.status_code} from {url} while downloading {name}; retrying attempt {attempt + 1}/4.",
+                        file=sys.stderr,
+                    )
+                    time.sleep(attempt * 5)
+                    continue
+                response.raise_for_status()
+                total = int(response.headers.get("content-length", "0")) + resume_at
+                with tmp.open(mode) as handle, tqdm(
+                    total=total or expected_size,
+                    initial=resume_at,
+                    unit="B",
+                    unit_scale=True,
+                    unit_divisor=1024,
+                    desc=name,
+                ) as progress:
+                    for chunk in response.iter_content(chunk_size=1024 * 1024):
+                        if chunk:
+                            handle.write(chunk)
+                            progress.update(len(chunk))
+                return
+        except requests.RequestException:
+            if attempt == 4:
+                raise
+            time.sleep(attempt * 5)
+
+
+def download(record: dict[str, Any], out_dir: Path, force: bool, checksum_map: dict[str, str]) -> dict[str, Any]:
+    name = record["fileName"]
+    target = out_dir / name
+    expected_size = int(record.get("fileSizeBytes") or 0)
+
+    if target.exists() and not force:
+        if expected_size == 0 or target.stat().st_size == expected_size:
+            print(f"Skipping existing file: {target}")
+            return {"file": name, "status": "skipped", "bytes": target.stat().st_size}
+
+    tmp = target.with_suffix(target.suffix + ".part")
+    last_error: requests.RequestException | None = None
+    for url in get_http_urls(record):
+        print(f"Downloading {name} from {url}")
+        try:
+            stream_to_tmp(url, tmp, expected_size, force, name)
+            break
+        except requests.RequestException as exc:
+            last_error = exc
+            print(f"Download failed from {url}: {exc}", file=sys.stderr)
+    else:
+        assert last_error is not None
+        raise last_error
+
+    tmp.replace(target)
+
+    if expected_size and target.stat().st_size != expected_size:
+        raise RuntimeError(f"Size mismatch for {target}: got {target.stat().st_size}, expected {expected_size}")
+
+    expected_sha1 = checksum_map.get(name)
+    if expected_sha1:
+        observed = sha1(target)
+        if observed.lower() != expected_sha1:
+            raise RuntimeError(f"SHA1 mismatch for {target}: got {observed}, expected {expected_sha1}")
+
+    return {"file": name, "status": "downloaded", "bytes": target.stat().st_size}
+
+
+def main() -> None:
+    args = parse_args()
+    out_dir = Path(args.out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    response = requests.get(FILES_URL, timeout=60)
+    response.raise_for_status()
+    files = response.json()
+    checksum_map = load_checksum_map()
+    selected = wanted_files(files, args.include_raw, args.sample_regex, args.limit, labelled_raw_files(args.labels))
+    if not selected:
+        raise SystemExit("No PRIDE files selected for download.")
+
+    manifest = []
+    for record in selected:
+        manifest.append(download(record, out_dir, args.force, checksum_map))
+
+    manifest_path = out_dir / "download_manifest.json"
+    manifest_path.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+    print(f"Wrote {manifest_path}")
+
+    mzxml_count = sum(1 for item in manifest if item["file"].lower().endswith(".mzxml"))
+    if mzxml_count == 0:
+        print("No mzXML files were downloaded.", file=sys.stderr)
+        sys.exit(2)
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,16 @@
+train_path: "${oc.env:INSTANOVO_WORKDIR,/tmp/instanovo_pxd059455}/processed/sdf/*train*.parquet"
+valid_path: "${oc.env:INSTANOVO_WORKDIR,/tmp/instanovo_pxd059455}/processed/sdf/*valid*.parquet"
+
+preshuffle_across_shards: False
+perform_data_checks: True
+validate_precursor_mass: True
+lazy_loading: True
+verbose_loading: True
+max_shard_size: 100000
+valid_subset_of_train:
+blacklist:
+train_partition:
+valid_partition:
+column_remapping:
+residue_remapping:
+

@@ -1,0 +1,42 @@
+{
+  "labels_total_after_ptm_parse": 967,
+  "spectra_total": 966,
+  "split_counts": {
+    "test": 78,
+    "train": 831,
+    "valid": 57
+  },
+  "raw_files_by_split": {
+    "train": [
+      "MP_CT17052024_HP_12_12_2_120mins_DDA01",
+      "MP_CT17052024_HP_20_02_1_120mins_DDA01",
+      "MP_CT17052024_HP_20_02_2_120mins_DDA01",
+      "MP_CT17052024_HP_24_01_1_120mins_DDA01",
+      "MP_CT17052024_HP_24_01_2_120mins_DDA01",
+      "MP_CT17052024_HP_29_11_2_120mins_DDA01",
+      "MP_CT17052024_HP_31_01_1_120mins_DDA01",
+      "MP_CT17052024_HP_31_01_2_120mins_DDA01",
+      "MP_CT18052024_UT_23_24_01_1_120mins_DDA01",
+      "MP_CT18052024_UT_23_24_01_2_120mins_DDA01",
+      "MP_CT18052024_UT_27_02_2_120mins_DDA01",
+      "MP_CT18052024_UT_29_30_11_2_120mins_DDA01",
+      "MP_CT18052024_UT_5_12_1_120mins_DDA01"
+    ],
+    "valid": [
+      "MP_CT17052024_HP_12_12_1_120mins_DDA01",
+      "MP_CT18052024_UT_22_23_02_1_120mins_DDA01",
+      "MP_CT18052024_UT_27_02_1_120mins_DDA01"
+    ],
+    "test": [
+      "MP_CT17052024_HP_29_11_1_120mins_DDA01",
+      "MP_CT18052024_UT_22_23_02_2_120mins_DDA01",
+      "MP_CT18052024_UT_5_12_2_120mins_DDA01"
+    ]
+  },
+  "label_drop_reasons": {},
+  "match_stats": {
+    "unlabelled_ms2": 793775,
+    "matched": 966
+  },
+  "phospho_label_count": 0
+}

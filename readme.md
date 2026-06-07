@@ -1,66 +1,72 @@
-# Fine-tuning InstaNovo for Wastewater Bacterial Proteomics
+# Fine-Tuning InstaNovo for Wastewater Bacterial Proteomics
 
-This project uses InstaNovo for de novo peptide sequencing on wastewater bacterial proteomics data.
-The whole idea is in the slide of "Bacterial Fine-Tuning of InstaNovo for Large-Scale Wastewater Proteomics_Wenjing"
+This repository contains a fine-tuning workflow for applying InstaNovo to the
+PXD059455 wastewater metaproteomics dataset.
 
-1. Environment
+The workflow uses MaxQuant-derived high-confidence PSM labels from
+`docs/msms.xlsx`, downloads the corresponding PXD059455 mzXML/mzML peak-list
+files from PRIDE, builds InstaNovo SpectrumDataFrame train/validation/test
+shards, fine-tunes from the official `instanovo-v1.2.0` checkpoint, and
+evaluates the fine-tuned checkpoint on held-out raw files.
 
-The project was run on Windows using a conda environment.
+Full workflow documentation is in
+[`docs/PXD059455_AICHOR_FINETUNE.md`](docs/PXD059455_AICHOR_FINETUNE.md).
 
-#powershell:
-conda create -n instanovo_clean python=3.10
-conda activate instanovo_clean
+## Reference Run
 
+- Train spectra: `831`
+- Validation spectra: `57`
+- Test spectra: `78`
+- Training steps: `306`
+- Effective batch size: `64`
+- Learning rate: `5e-6`
+- Checkpoint selection: best validation loss
 
-(1)Install required packages:
+Compared with the official InstaNovo v1.2.0 checkpoint on the held-out test
+split, the fine-tuned checkpoint improved:
 
-#powershell:
-pip install instanovo
-pip install torch pandas pyarrow openpyxl tensorboard
+- Amino-acid precision: `0.77529` to `0.80758`
+- Amino-acid recall: `0.77605` to `0.80915`
+- Amino-acid error rate: `0.14314` to `0.11685`
+- Peptide precision/recall: `0.58974` to `0.62821`
+- 20 ppm precursor-mass pass count: `66/78` to `67/78`
 
-May have block for system, using:
-python -c "from instanovo.cli import instanovo_entrypoint; instanovo_entrypoint()"
+Reference artifacts are committed under
+[`reference_artifacts/pxd059455_instanovo_9623d64d`](reference_artifacts/pxd059455_instanovo_9623d64d).
 
-2. Dataset
+## Dataset Size
 
-files:
-data_split/parquet/dataset-ms-train-0000-0001.parquet
-data_split/parquet/dataset-ms-val-0000-0001.parquet
-data_split/parquet/dataset-ms-test-0000-0001.parquet
+This is a small supervised fine-tuning set: the reference split contains `831`
+training spectra, `57` validation spectra, and `78` test spectra. The run should
+therefore be interpreted as a proof of concept for the PXD059455 workflow and
+data plumbing rather than as a fully powered domain adaptation effort. A more
+substantial fine-tuning effort would require many more labelled spectra,
+ideally covering more raw files, organisms, peptide classes, charge states, and
+relevant PTMs.
 
-3. Fine-tuning Command
-Fine-tuned model
-#powershell:
-instanovo transformer train `
-  dataset.train_path="XXX" `
-  dataset.valid_path="XXX" `
-  dataset.train_partition="train" `
-  dataset.valid_partition="val" `
-  resume_checkpoint_path="XXX\instanovo-v1.2.0.ckpt" `
-  train_batch_size=4 `
-  predict_batch_size=4 `
-  learning_rate=1e-7 `
-  warmup_iters=2 `
-  training_steps=10 `
-  validation_interval=10 `
-  checkpoint_interval=10 `
-  use_neptune=false
+## Checkpoint
 
-4. Run and evaluated  model
+The fine-tuned checkpoint is available from the GitHub release:
 
-python -c "from instanovo.cli import instanovo_entrypoint; instanovo_entrypoint()" transformer predict `
-  --data-path "xxxx.parquet" `
-  --output-path "xxxx.csv" `
-  --instanovo-model "instanovo-v1.2.0" `
-  --evaluation
+```text
+https://github.com/BioGeek/fine_tuning_instanovo_Wenjing_right/releases/download/pxd059455-finetune/model_best.ckpt
+```
 
-python -c "from instanovo.cli import instanovo_entrypoint; instanovo_entrypoint()" transformer predict `
-  --data-path "xxx.parquet" `
-  --output-path "xxx.csv" `
-  --instanovo-model "models\FINAL_trained_ultra_light_instanovo.ckpt" `
-  --evaluation
+Validated checkpoint SHA256:
 
+```text
+3c0630a7f346088650b481398c979c7e264401781b5f8cb6d2c4d7225b76e02e
+```
 
+Reproduce the held-out test metrics with:
 
+```bash
+scripts/reproduce_release_checkpoint.sh
+```
 
+## Run The Workflow
 
+The workflow is containerized and should be portable to GPU environments with
+the same dependencies. See
+[`docs/PXD059455_AICHOR_FINETUNE.md`](docs/PXD059455_AICHOR_FINETUNE.md) for the
+pipeline steps, configuration, and expected outputs.

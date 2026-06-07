@@ -1,0 +1,24 @@
+.git/
+__pycache__/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.cache/
+*.pyc
+*.pyo
+*.log
+*.tmp
+
+# Historical/local outputs. The Aichor job downloads PRIDE data in-container.
+data_split/
+results/
+logs/
+models/
+checkpoints/
+outputs/
+wandb/
+
+# Large report assets are not needed by the training job.
+*.pptx
+*.docx
+
