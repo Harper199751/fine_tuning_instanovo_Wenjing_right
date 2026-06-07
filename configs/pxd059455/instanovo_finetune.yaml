@@ -14,7 +14,15 @@ tags:
 tb_summarywriter: "${oc.env:INSTANOVO_WORKDIR,/tmp/instanovo_pxd059455}/tensorboard/"
 
 seed: 101
-warmup_iters: 5
+# NOTE: the step-based values below (warmup_iters, training_steps,
+# validation_interval, checkpoint_interval, console/tensorboard logging) are the
+# canonical settings for the 831-train reference split: train // train_batch_size
+# = 51 steps/epoch over 6 epochs => 306 steps, validate/checkpoint once per epoch,
+# warmup = 5% of training_steps. scripts/04_make_training_overrides.py recomputes
+# them from the actual split size at runtime and passes them as CLI overrides, so
+# they scale to whatever dataset you build; these committed values keep a direct
+# `instanovo transformer train --config-name instanovo_finetune` run faithful.
+warmup_iters: 15
 learning_rate: 5e-6
 weight_decay: 1e-6
 train_batch_size: 16
@@ -35,11 +43,11 @@ fp16: True
 mps: False
 force_fp32: False
 
-training_steps: 100
+training_steps: 306
 num_sanity_val_steps: 2
 validate_before_training: True
-console_logging_steps: 50
-tensorboard_logging_steps: 25
+console_logging_steps: 12
+tensorboard_logging_steps: 12
 use_neptune: False
 
 enable_verbose_logging: True
@@ -49,8 +57,8 @@ enable_verbose_s3: True
 train_subset: 1.0
 valid_subset: 1.0
 
-validation_interval: 10
-checkpoint_interval: 10
+validation_interval: 51
+checkpoint_interval: 51
 
 save_model: True
 keep_model_every_interval: False
@@ -62,4 +70,10 @@ checkpoint_metric_mode: min
 
 resume_accelerator_state:
 resume_checkpoint_path: "${oc.env:INSTANOVO_WORKDIR,/tmp/instanovo_pxd059455}/checkpoints/instanovo-v1.2.0-train-resume.ckpt"
-residue_conflict_resolution: delete
+# `residues/default.yaml` matches the checkpoint's vocabulary exactly, so the
+# pretrained head/embeddings load without any vocab surgery. This setting only
+# takes effect if the residue sets ever diverge: `partial` then keeps the
+# pretrained rows for the overlapping tokens and only re-initialises genuinely new
+# ones (append new residues, don't reorder), whereas `delete` would reset the whole
+# head/embedding from scratch.
+residue_conflict_resolution: partial

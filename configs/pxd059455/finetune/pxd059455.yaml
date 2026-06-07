@@ -1,3 +1,8 @@
+# Canonical staged unfreeze for the 831-train reference split: unfreeze the head +
+# embeddings immediately, the decoder after ~1 epoch (51 steps), and all remaining
+# parameters after ~2 epochs (102 steps). scripts/04_make_training_overrides.py
+# regenerates this file from the actual steps-per-epoch at runtime, so the phase
+# boundaries scale with the dataset you build.
 unfreeze_format: start_step
 verbose: True
 unfreeze_schedule:
@@ -6,9 +11,9 @@ unfreeze_schedule:
       - head.bias
       - head.weight
       - aa_embed.weight
-  - start_step: 1
+  - start_step: 51
     params:
       - decoder.*
-  - start_step: 2
+  - start_step: 102
     params:
       - "*"
