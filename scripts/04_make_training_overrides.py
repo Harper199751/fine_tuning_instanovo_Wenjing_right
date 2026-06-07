@@ -20,8 +20,15 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def write_finetune_config(path: Path, decoder_unfreeze_step: int, full_unfreeze_step: int) -> None:
-    """Write a step-based finetuning schedule for InstaNovo 1.2.x."""
+def write_finetune_config(path: Path, encoder_unfreeze_step: int, full_unfreeze_step: int) -> None:
+    """Write a step-based, encoder-first finetuning schedule for InstaNovo 1.2.x.
+
+    Follows the InstaNovo-P strategy: unfreeze the head + sequence embeddings
+    first, then the spectrum/input encoder stack (encoder, peak encoder, charge
+    encoder, latent spectrum query), then all remaining parameters (the decoder
+    included). The final ``*`` phase guarantees every parameter is trainable by the
+    end, including any not matched by the explicit groups.
+    """
     path.write_text(
         "\n".join(
             [
@@ -33,9 +40,12 @@ def write_finetune_config(path: Path, decoder_unfreeze_step: int, full_unfreeze_
                 "      - head.bias",
                 "      - head.weight",
                 "      - aa_embed.weight",
-                f"  - start_step: {decoder_unfreeze_step}",
+                f"  - start_step: {encoder_unfreeze_step}",
                 "    params:",
-                "      - decoder.*",
+                "      - encoder.*",
+                "      - peak_encoder.*",
+                "      - charge_encoder.*",
+                "      - latent_spectrum",
                 f"  - start_step: {full_unfreeze_step}",
                 "    params:",
                 '      - "*"',
@@ -55,7 +65,7 @@ def main() -> None:
     warmup_iters = max(5, int(round(training_steps * 0.05)))
     validation_interval = steps_per_epoch
     checkpoint_interval = validation_interval
-    decoder_unfreeze_step = steps_per_epoch
+    encoder_unfreeze_step = steps_per_epoch
     full_unfreeze_step = steps_per_epoch * 2
 
     lines = [
@@ -77,7 +87,7 @@ def main() -> None:
     print(f"steps_per_epoch={steps_per_epoch}")
     print("\n".join(lines))
     if args.finetune_config:
-        write_finetune_config(Path(args.finetune_config), decoder_unfreeze_step, full_unfreeze_step)
+        write_finetune_config(Path(args.finetune_config), encoder_unfreeze_step, full_unfreeze_step)
         print(f"Updated finetune schedule: {args.finetune_config}")
 
 

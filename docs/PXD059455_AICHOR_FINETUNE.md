@@ -71,8 +71,10 @@ Reference outputs from this run are committed under
 - Learning rate: `5e-6`, cosine schedule.
 - Weight decay: `1e-6`.
 - Validation/checkpoint interval: once per computed training epoch.
-- Fine-tuning schedule: head from step 0, decoder after one computed training
-  epoch, full model after two computed training epochs.
+- Fine-tuning schedule (encoder-first, after the InstaNovo-P strategy): head +
+  embeddings from step 0, the spectrum/input encoder stack after one computed
+  training epoch, and all remaining parameters (the decoder included) after two
+  computed training epochs.
 - Checkpoint selection: best validation loss.
 - Evaluation: greedy decoding with phospho residues suppressed because this
   label set contains no phosphorylation annotations.

@@ -1,8 +1,11 @@
-# Canonical staged unfreeze for the 831-train reference split: unfreeze the head +
-# embeddings immediately, the decoder after ~1 epoch (51 steps), and all remaining
-# parameters after ~2 epochs (102 steps). scripts/04_make_training_overrides.py
-# regenerates this file from the actual steps-per-epoch at runtime, so the phase
-# boundaries scale with the dataset you build.
+# Canonical encoder-first staged unfreeze (after the InstaNovo-P fine-tuning
+# strategy) for the 831-train reference split: unfreeze the head + sequence
+# embeddings immediately, the spectrum/input encoder stack after ~1 epoch
+# (51 steps), and all remaining parameters (the decoder included) after ~2 epochs
+# (102 steps). The final "*" phase guarantees every parameter (e.g. charge_encoder)
+# is trainable by the end. scripts/04_make_training_overrides.py regenerates this
+# file from the actual steps-per-epoch at runtime, so the phase boundaries scale
+# with the dataset you build.
 unfreeze_format: start_step
 verbose: True
 unfreeze_schedule:
@@ -13,7 +16,10 @@ unfreeze_schedule:
       - aa_embed.weight
   - start_step: 51
     params:
-      - decoder.*
+      - encoder.*
+      - peak_encoder.*
+      - charge_encoder.*
+      - latent_spectrum
   - start_step: 102
     params:
       - "*"
