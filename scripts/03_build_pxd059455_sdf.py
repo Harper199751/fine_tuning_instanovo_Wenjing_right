@@ -15,6 +15,7 @@ from typing import Any
 import numpy as np
 import pandas as pd
 import polars as pl
+from omegaconf import OmegaConf
 from pyteomics import mzml, mzxml
 
 from instanovo.constants import PROTON_MASS_AMU
@@ -22,38 +23,18 @@ from instanovo.utils.data_handler import SpectrumDataFrame
 from instanovo.utils.residues import ResidueSet
 
 
-RESIDUES = {
-    "G": 57.021464,
-    "A": 71.037114,
-    "S": 87.032028,
-    "P": 97.052764,
-    "V": 99.068414,
-    "T": 101.047670,
-    "C": 103.009185,
-    "L": 113.084064,
-    "I": 113.084064,
-    "N": 114.042927,
-    "D": 115.026943,
-    "Q": 128.058578,
-    "K": 128.094963,
-    "E": 129.042593,
-    "M": 131.040485,
-    "H": 137.058912,
-    "F": 147.068414,
-    "R": 156.101111,
-    "Y": 163.063329,
-    "W": 186.079313,
-    "M[UNIMOD:35]": 147.035400,
-    "C[UNIMOD:4]": 160.030649,
-    "N[UNIMOD:7]": 115.026943,
-    "Q[UNIMOD:7]": 129.042594,
-    "S[UNIMOD:21]": 166.998028,
-    "T[UNIMOD:21]": 181.013670,
-    "Y[UNIMOD:21]": 243.029329,
-    "[UNIMOD:1]": 42.010565,
-    "[UNIMOD:5]": 43.005814,
-    "[UNIMOD:385]": -17.026549,
-}
+# Single source of truth for the residue vocabulary: the Hydra residues config the
+# model is fine-tuned against. Loading it here (rather than re-listing the masses)
+# guarantees the labels we build can never drift from the training/eval vocabulary.
+RESIDUE_CONFIG = Path(__file__).resolve().parents[1] / "configs" / "pxd059455" / "residues" / "default.yaml"
+
+
+def load_residue_masses(path: Path = RESIDUE_CONFIG) -> dict[str, float]:
+    config = OmegaConf.load(path)
+    return {str(token): float(mass) for token, mass in OmegaConf.to_container(config.residues, resolve=True).items()}
+
+
+RESIDUES = load_residue_masses()
 RESIDUE_SET = ResidueSet(RESIDUES)
 WATER_MASS = 18.0106
 
