@@ -14,9 +14,9 @@
   "finetuned": {
     "model": "pxd059455_finetuned",
     "n_spectra": 78,
-    "aa_precision": 0.7943743937924346,
-    "aa_recall": 0.7974683544303798,
-    "aa_error_rate": 0.12658227848101267,
+    "aa_precision": 0.8075801749271136,
+    "aa_recall": 0.8091528724440117,
+    "aa_error_rate": 0.11684518013631938,
     "peptide_precision": 0.6282051282051282,
     "peptide_recall": 0.6282051282051282,
     "pass_20ppm_count": 67,

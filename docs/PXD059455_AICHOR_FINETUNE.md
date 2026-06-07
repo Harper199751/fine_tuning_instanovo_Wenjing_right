@@ -71,10 +71,12 @@ Reference outputs from this run are committed under
 - Learning rate: `5e-6`, cosine schedule.
 - Weight decay: `1e-6`.
 - Validation/checkpoint interval: once per computed training epoch.
-- Fine-tuning schedule (encoder-first, after the InstaNovo-P strategy): head +
-  embeddings from step 0, the spectrum/input encoder stack after one computed
-  training epoch, and all remaining parameters (the decoder included) after two
-  computed training epochs.
+- Fine-tuning schedule (per-layer encoder-first gradual unfreezing, following the
+  InstaNovo-P manuscript): head + embeddings first, then the encoder layers from the
+  top (8) down to (0), then the decoder layers from the top down (encoder fully
+  before decoder). Phase start steps are placed at fixed fractions of the total
+  training steps; the manuscript spans ~10 transition epochs on a much larger
+  corpus, so the same relative ordering is scaled to this run's step budget.
 - Checkpoint selection: best validation loss.
 - Evaluation: greedy decoding with phospho residues suppressed because this
   label set contains no phosphorylation annotations.
@@ -82,19 +84,22 @@ Reference outputs from this run are committed under
 ## Result
 
 The reference run trained for 306 trainer steps, validated every 51 steps, and
-evaluated on 78 held-out spectra. Validation loss decreased from `0.45504`
-before training to `0.32188` at the final checkpoint.
+evaluated on 78 held-out spectra. Validation loss decreased from `0.44818`
+before training to `0.32243` at the final checkpoint.
 
 Compared with the official InstaNovo v1.2.0 checkpoint on the held-out test
 split, the fine-tuned checkpoint improved:
 
-- Amino-acid precision: `0.77529` to `0.79437`.
-- Amino-acid recall: `0.77605` to `0.79747`.
-- Amino-acid error rate: `0.14314` to `0.12658`.
+- Amino-acid precision: `0.77529` to `0.80758`.
+- Amino-acid recall: `0.77605` to `0.80915`.
+- Amino-acid error rate: `0.14314` to `0.11685`.
 - Peptide precision/recall: `0.58974` to `0.62821`.
 - 20 ppm precursor-mass pass count: `66/78` to `67/78`.
 
-No phospho predictions were emitted.
+No phospho predictions were emitted. These numbers are from a local re-run with
+the per-layer encoder-first schedule (the small test set means the peptide-level
+and 20 ppm deltas are only a few spectra; the validation-loss drop is the
+clearer signal).
 
 ## Dataset Size
 

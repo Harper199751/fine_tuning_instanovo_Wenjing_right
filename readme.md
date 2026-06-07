@@ -25,9 +25,9 @@ Full workflow documentation is in
 Compared with the official InstaNovo v1.2.0 checkpoint on the held-out test
 split, the fine-tuned checkpoint improved:
 
-- Amino-acid precision: `0.77529` to `0.79437`
-- Amino-acid recall: `0.77605` to `0.79747`
-- Amino-acid error rate: `0.14314` to `0.12658`
+- Amino-acid precision: `0.77529` to `0.80758`
+- Amino-acid recall: `0.77605` to `0.80915`
+- Amino-acid error rate: `0.14314` to `0.11685`
 - Peptide precision/recall: `0.58974` to `0.62821`
 - 20 ppm precursor-mass pass count: `66/78` to `67/78`
 
